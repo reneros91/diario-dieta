@@ -4,7 +4,14 @@ import type { Database } from "@/lib/types/db";
 import { supabaseConfigurado } from "@/lib/env";
 
 /** Rotas que funcionam deslogado. */
-const PUBLICAS = ["/login", "/auth", "/api/ingest", "/manifest.webmanifest", "/sw.js"];
+const PUBLICAS = [
+  "/login",
+  "/cadastro",
+  "/auth",
+  "/api/ingest",
+  "/manifest.webmanifest",
+  "/sw.js",
+];
 
 /** Renova a sessão a cada navegação e manda quem não tem sessão para /login. */
 export async function atualizarSessao(request: NextRequest) {
@@ -60,7 +67,7 @@ export async function atualizarSessao(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  if (user && pathname === "/login") {
+  if (user && (pathname === "/login" || pathname === "/cadastro")) {
     const url = request.nextUrl.clone();
     url.pathname = "/";
     url.search = "";

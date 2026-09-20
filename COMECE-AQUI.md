@@ -43,17 +43,15 @@ porque não teria onde salvar nada.
 > Se aparecer erro vermelho, confira se você colou o arquivo inteiro, do começo ao fim, e se rodou
 > o `0001` **antes** do `0002`.
 
-### 1.2 — Deixar o login por código ligado
+### 1.2 — Deixar o login por senha ligado
 
 1. Menu da esquerda → **Authentication** → **Providers** → **Email**.
 2. Deixe **Enable Email provider** ligado.
-3. Ainda em Authentication, vá em **Emails** (ou *Email Templates*) → aba **Magic Link**.
-4. No corpo do e-mail, garanta que existe a linha `{{ .Token }}` — é o código de 6 dígitos que o
-   app pede. Se só tiver o link, acrescente uma linha com:
+3. **DESLIGUE a opção "Confirm email"** e salve.
 
-   ```
-   Seu código: {{ .Token }}
-   ```
+Esse segundo passo é o que faz o cadastro já entrar logado, sem passar por e-mail nenhum. O plano
+gratuito do Supabase só envia 2 e-mails por hora no projeto inteiro — com duas pessoas usando, isso
+travaria o login todo dia.
 
 ### 1.3 — Copiar as três chaves
 
@@ -113,21 +111,23 @@ Essa chave vai em `ANTHROPIC_API_KEY`.
 3. Em **Redirect URLs**, adicione o mesmo endereço com `/**` no fim:
    `https://diario-dieta.vercel.app/**`
 
-Sem isso o código do e-mail chega, mas o login não conclui.
+Com login por senha isso não é mais crítico no dia a dia, mas deixa o projeto certo caso um dia
+você ligue a recuperação de senha por e-mail.
 
 ---
 
 ## Passo 4 — Primeiro acesso
 
 1. Abra o endereço da Vercel no celular.
-2. Digite seu e-mail → chega um código de 6 dígitos → digite e entre.
+2. Clique em **Criar conta**, coloque seu e-mail e uma senha de 8 caracteres ou mais. Você já
+   entra logado.
 3. Vá direto na aba **Perfil** e preencha: sexo, idade, altura, peso, % de gordura (se souber) e
    o fator de atividade. É daí que saem a TMB, o GET e a meta — antes disso os números na tela
    são só o padrão de fábrica.
 4. Volte na **Conversa** e escreva algo como *"2 ovos mexidos e um pão francês com requeijão"*.
 
-Para a Mariana usar: ela abre o mesmo endereço e entra com o e-mail dela. Cada conta enxerga só
-os próprios dados — isso é garantido pelo banco, não pelo app.
+Para a Mariana usar: ela abre o mesmo endereço e cria a conta dela, com o e-mail e a senha dela.
+Cada conta enxerga só os próprios dados — isso é garantido pelo banco, não pelo app.
 
 ### Instalar como aplicativo no iPhone
 
@@ -162,8 +162,8 @@ em **Perfil → Atalho do iOS**.
 | O que você vê | O que é |
 | --- | --- |
 | Tela "Falta configurar" | alguma variável não foi salva na Vercel, ou faltou o *Redeploy* depois de adicionar |
-| O código do e-mail não chega | veja a caixa de spam; confirme que o provider Email está ligado no Supabase |
-| Digito o código e volta para o login | falta o endereço da Vercel em *Redirect URLs* (passo 3.1) |
+| "Conta criada, mas o Supabase está exigindo confirmação por e-mail" | falta desligar o **Confirm email** (passo 1.2) |
+| "E-mail ou senha não conferem" | senha errada, ou a conta ainda não foi criada — use **Criar conta** |
 | "Limite diário de IA atingido" | são 40 conversas por dia por pessoa; o resto do app continua funcionando normalmente |
 | "IA não configurada neste ambiente" | falta a `ANTHROPIC_API_KEY` na Vercel |
 | Erro de tabela não encontrada | as migrations do passo 1.1 não rodaram, ou rodaram fora de ordem |

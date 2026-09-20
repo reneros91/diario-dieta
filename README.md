@@ -88,9 +88,19 @@ npx supabase gen types typescript --project-id <id> > lib/types/db.ts
 
 ### Auth
 
-Login por e-mail com código (OTP), sem senha. No painel do Supabase, em **Authentication →
-Providers → Email**, deixe "Confirm email" ligado e o e-mail de OTP ativo. O template precisa conter
-`{{ .Token }}` para o código de 6 dígitos; quem preferir clicar no link cai em `/auth/confirm`.
+Login por **e-mail e senha** (`signInWithPassword`), com cadastro em `/cadastro`
+(`signUp`, mínimo de 8 caracteres).
+
+No painel do Supabase, em **Authentication → Providers → Email**: provider ligado e
+**"Confirm email" DESLIGADO**. Sem isso o `signUp` não devolve sessão e a pessoa fica presa na
+tela de cadastro (o app avisa, em vez de travar em silêncio).
+
+> Por que não OTP: o plano gratuito do Supabase envia **2 e-mails por hora no projeto inteiro**.
+> Com login por código, duas pessoas entrando na mesma manhã já estouram o limite — é a razão de
+> a autenticação ser por senha.
+
+`/auth/confirm` continua no projeto: não é mais usada no login do dia a dia, e serve de ponto de
+entrada caso um fluxo de recuperação de senha seja ligado depois.
 
 ## Publicar na Vercel
 
