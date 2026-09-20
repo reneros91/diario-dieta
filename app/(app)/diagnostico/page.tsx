@@ -22,6 +22,7 @@ type Rastro = {
   pergunta?: string;
   buscas?: number;
   consultas?: string[];
+  produtos?: { busca: string; achados: string[] }[];
   falhaBusca?: string | null;
   candidatosTaco?: string[];
   itensDaIA?: ItemRastro[];
@@ -271,6 +272,15 @@ export default async function Diagnostico() {
                               ? `Pesquisou ${r.buscas}× na web: ${(r.consultas ?? []).join(" · ") || "sem consulta registrada"}`
                               : "Não pesquisou na web."}
                         </p>
+
+                        {(r.produtos ?? []).map((c, i) => (
+                          <p key={`${c.busca}-${i}`} className="mt-1 text-[11px] text-muted">
+                            Open Food Facts, “{c.busca}”:{" "}
+                            {c.achados.length
+                              ? c.achados.join(" | ")
+                              : "não achou nada"}
+                          </p>
+                        ))}
 
                         <p className="mt-1 text-[11px] text-muted">
                           Alimentos da tabela oferecidos:{" "}

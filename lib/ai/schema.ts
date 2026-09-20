@@ -168,6 +168,49 @@ export const TOOL_REGISTRAR = {
 };
 
 /* ------------------------------------------------------------------ */
+/* Consulta de produto industrializado                                 */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Tool executada pelo servidor (não pelo modelo): consulta o Open Food Facts.
+ *
+ * Vem antes da busca na web para industrializado porque devolve número de
+ * rótulo identificado, em vez do que o buscador achar num site de dieta.
+ */
+export const TOOL_PRODUTO = {
+  name: "consultar_produto",
+  description:
+    "Consulta a tabela nutricional de um produto industrializado no Open Food Facts. " +
+    "Use ANTES de web_search para qualquer produto de marca: refrigerante, cerveja, " +
+    "iogurte, biscoito, congelado, barra, leite de caixinha. " +
+    "Prefira o código de barras quando a pessoa mandou foto da embalagem: é exato. " +
+    "Por nome, devolve candidatos — escolha o que bate com a marca e o tamanho que " +
+    "ela descreveu, e diga na resposta qual produto você usou.",
+  input_schema: {
+    type: "object" as const,
+    additionalProperties: false,
+    required: [],
+    properties: {
+      codigo_barras: {
+        type: ["string", "null"],
+        description: "Os dígitos do código de barras, quando visíveis na foto. Null se não houver.",
+      },
+      nome: {
+        type: ["string", "null"],
+        description:
+          "Marca e produto para procurar, ex: 'coca-cola zero' ou 'leite integral italac'. " +
+          "Null quando você mandou o código de barras.",
+      },
+    },
+  },
+};
+
+export const zConsultaProduto = z.object({
+  codigo_barras: z.string().trim().max(20).nullable().optional(),
+  nome: z.string().trim().max(80).nullable().optional(),
+});
+
+/* ------------------------------------------------------------------ */
 /* Receita                                                             */
 /* ------------------------------------------------------------------ */
 

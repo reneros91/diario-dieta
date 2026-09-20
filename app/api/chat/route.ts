@@ -14,8 +14,20 @@ import {
   respostaCacheada,
 } from "@/lib/ai/anthropic";
 import { REGRAS, contextoChat } from "@/lib/ai/prompt";
-import { TOOL_REGISTRAR, zRegistro, type Acao } from "@/lib/ai/schema";
+import {
+  TOOL_PRODUTO,
+  TOOL_REGISTRAR,
+  zConsultaProduto,
+  zRegistro,
+  type Acao,
+} from "@/lib/ai/schema";
 import { normAcoes } from "@/lib/ai/normalize";
+import {
+  descreverProduto,
+  produtoPorCodigo,
+  produtosPorNome,
+  type Produto,
+} from "@/lib/ai/openfoodfacts";
 import {
   conciliarComTaco,
   indexarTaco,
@@ -55,6 +67,50 @@ function consultasDeBusca(msg: Anthropic.Message): string[] {
       return typeof entrada?.query === "string" ? entrada.query : "";
     })
     .filter(Boolean);
+}
+
+/** O que a IA procurou no Open Food Facts e o que voltou. Entra no rastro. */
+export type ConsultaProduto = { busca: string; achados: string[] };
+
+/**
+ * Executa `consultar_produto` e devolve o bloco que volta para o modelo.
+ *
+ * Quando nada é achado, a resposta diz isso com todas as letras e manda
+ * pesquisar na web — calar aqui faria o modelo voltar a estimar de cabeça,
+ * que é exatamente o que a REGRA ZERO proíbe.
+ */
+async function atenderConsulta(
+  pedido: Anthropic.ToolUseBlock,
+  registro: ConsultaProduto[],
+): Promise<Anthropic.ToolResultBlockParam> {
+  const args = zConsultaProduto.safeParse(pedido.input);
+  const codigo = args.success ? (args.data.codigo_barras ?? "") : "";
+  const nome = args.success ? (args.data.nome ?? "") : "";
+
+  const achados = codigo
+    ? [await produtoPorCodigo(codigo)].filter((p): p is Produto => p !== null)
+    : await produtosPorNome(nome);
+
+  registro.push({
+    busca: codigo ? `código ${codigo}` : nome,
+    achados: achados.map((p) => descreverProduto(p)),
+  });
+
+  const conteudo = achados.length
+    ? [
+        `${achados.length} produto(s) no Open Food Facts. Valores por 100 ${achados[0].unidade}:`,
+        ...achados.map(
+          (p) =>
+            `- ${descreverProduto(p)}: ${p.kcal} kcal, ${p.prot} P, ${p.carb} C, ${p.gord} G` +
+            (p.alcool ? `, ${p.alcool} g de álcool` : "") +
+            ` por 100 ${p.unidade}.`,
+        ),
+        'Use estes números, escale para a quantidade consumida, marque "fonte": "web" e ' +
+          'copie a descrição do produto para "fonte_detalhe".',
+      ].join("\n")
+    : "Nada encontrado no Open Food Facts. Tente web_search, ou peça a marca e uma foto do rótulo. Não estime de cabeça.";
+
+  return { type: "tool_result", tool_use_id: pedido.id, content: conteudo };
 }
 
 /** Os itens como a IA mandou, antes de o app conferir contra a tabela. */
@@ -233,6 +289,7 @@ export async function POST(request: Request) {
   // "registrar" na primeira fala, sem chance de pesquisar antes.
   const ferramentasComBusca = [
     TOOL_REGISTRAR,
+    TOOL_PRODUTO,
     { type: "web_search_20260209", name: "web_search", max_uses: MAX_BUSCAS },
   ];
 
@@ -255,6 +312,7 @@ export async function POST(request: Request) {
   // Sem isto a via de busca podia falhar em silêncio: o catch caía na via antiga
   // e ninguém ficava sabendo que industrializado nenhum foi pesquisado.
   let falhaBusca: string | null = null;
+  const consultasProduto: ConsultaProduto[] = [];
 
   try {
     msg = await anthropic().messages.create({
@@ -266,9 +324,26 @@ export async function POST(request: Request) {
     });
 
     // O servidor pausa turnos longos de busca; retomar é empurrar de volta.
+    // A consulta de produto roda aqui: o modelo pede, este laço executa e
+    // devolve o resultado para ele continuar. No máximo duas idas, para caber
+    // nos 60 s da função.
     let voltas = 0;
-    while (msg.stop_reason === "pause_turn" && voltas < 1) {
+    while (voltas < 2) {
+      const pedidos = msg.content.filter(
+        (b): b is Anthropic.ToolUseBlock => b.type === "tool_use" && b.name === TOOL_PRODUTO.name,
+      );
+
+      if (msg.stop_reason !== "pause_turn" && pedidos.length === 0) break;
+
+      // Contabiliza esta volta antes de a resposta ser substituída.
+      buscas += contarBuscas(msg);
       mensagens.push({ role: "assistant", content: msg.content });
+
+      if (pedidos.length > 0) {
+        const respostas = await Promise.all(pedidos.map((p) => atenderConsulta(p, consultasProduto)));
+        mensagens.push({ role: "user", content: respostas });
+      }
+
       msg = await anthropic().messages.create({
         ...base,
         max_tokens: 2400,
@@ -279,7 +354,7 @@ export async function POST(request: Request) {
       voltas += 1;
     }
 
-    buscas = contarBuscas(msg);
+    buscas += contarBuscas(msg);
 
     // Sem busca disponível o modelo pode terminar sem registrar nada: aí vale
     // a via antiga, com a ferramenta forçada.
@@ -375,6 +450,7 @@ export async function POST(request: Request) {
       pergunta: texto.slice(0, 300),
       buscas,
       consultas: consultasDeBusca(msg),
+      produtos: consultasProduto,
       falhaBusca,
       candidatosTaco: (candidatos ?? []).map((c) => c.nome),
       itensDaIA: itensDasAcoes(acoes),
