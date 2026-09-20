@@ -26,7 +26,7 @@ export default async function PaginaAdmin() {
   const [{ data: chamadas }, { data: perfis }] = await Promise.all([
     admin
       .from("ai_calls")
-      .select("user_id, tipo, modelo, tokens_in, tokens_out, custo_usd_est, created_at")
+      .select("user_id, tipo, modelo, tokens_in, tokens_out, buscas, custo_usd_est, created_at")
       .gte("created_at", `${desde}T00:00:00Z`)
       .order("created_at", { ascending: false })
       .limit(5000),
@@ -36,16 +36,17 @@ export default async function PaginaAdmin() {
   const nomes = new Map((perfis ?? []).map((p) => [p.user_id, p.nome ?? p.user_id.slice(0, 8)]));
   const limites = new Map((perfis ?? []).map((p) => [p.user_id, p.ai_diario_limite]));
 
-  const porUsuario = new Map<string, { chamadas: number; custo: number; hoje: number }>();
+  const porUsuario = new Map<string, { chamadas: number; custo: number; hoje: number; buscas: number }>();
   const porDia = new Map<string, { chamadas: number; custo: number }>();
   const hoje = hojeISO();
 
   for (const c of chamadas ?? []) {
     const dia = c.created_at.slice(0, 10);
 
-    const u = porUsuario.get(c.user_id) ?? { chamadas: 0, custo: 0, hoje: 0 };
+    const u = porUsuario.get(c.user_id) ?? { chamadas: 0, custo: 0, hoje: 0, buscas: 0 };
     u.chamadas += 1;
     u.custo += Number(c.custo_usd_est);
+    u.buscas += Number(c.buscas ?? 0);
     if (dia === hoje) u.hoje += 1;
     porUsuario.set(c.user_id, u);
 
@@ -82,6 +83,7 @@ export default async function PaginaAdmin() {
               <th className="font-normal py-1">Pessoa</th>
               <th className="font-normal py-1 text-right">Hoje</th>
               <th className="font-normal py-1 text-right">Chamadas</th>
+              <th className="font-normal py-1 text-right">Buscas</th>
               <th className="font-normal py-1 text-right">US$</th>
             </tr>
           </thead>
@@ -95,6 +97,7 @@ export default async function PaginaAdmin() {
                     {u.hoje}/{limites.get(id) ?? "—"}
                   </td>
                   <td className="py-1.5 text-right">{u.chamadas}</td>
+                  <td className="py-1.5 text-right">{u.buscas}</td>
                   <td className="py-1.5 text-right">{num(u.custo, 3)}</td>
                 </tr>
               ))}

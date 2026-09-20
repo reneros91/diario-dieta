@@ -13,7 +13,9 @@ export const zItemIA = z.object({
   carb: z.number().min(0).max(5000),
   gord: z.number().min(0).max(5000),
   /** Declarada pela IA; o app confere contra a tabela e corrige. */
-  fonte: z.enum(["taco", "rotulo", "estimativa"]).default("estimativa"),
+  fonte: z.enum(["taco", "rotulo", "web", "estimativa"]).default("estimativa"),
+  /** Onde exatamente: marca do rótulo, site pesquisado. */
+  fonte_detalhe: z.string().trim().max(200).nullable().default(null),
 });
 
 export const zAcao = z.discriminatedUnion("tipo", [
@@ -101,7 +103,7 @@ export const TOOL_REGISTRAR = {
               description: "Ingredientes da refeição. Só para tipo=refeicao.",
               items: {
                 type: "object",
-                required: ["nome", "quantidade", "unidade", "kcal", "prot", "carb", "gord", "fonte"],
+                required: ["nome", "quantidade", "unidade", "kcal", "prot", "carb", "gord", "fonte", "fonte_detalhe"],
                 additionalProperties: false,
                 properties: {
                   nome: { type: "string" },
@@ -113,9 +115,14 @@ export const TOOL_REGISTRAR = {
                   gord: { type: "number", description: "Gordura em g nesta quantidade." },
                   fonte: {
                     type: "string",
-                    enum: ["taco", "rotulo", "estimativa"],
+                    enum: ["taco", "rotulo", "web", "estimativa"],
                     description:
-                      "taco quando copiou da lista ALIMENTOS DA TABELA, rotulo quando leu de um rótulo, estimativa quando calculou de cabeça.",
+                      "taco quando copiou da lista ALIMENTOS DA TABELA, rotulo quando leu de um rótulo na foto, web quando pesquisou com web_search. Nunca use estimativa: se não tem fonte, não registre a linha e peça o que falta.",
+                  },
+                  fonte_detalhe: {
+                    type: ["string", "null"],
+                    description:
+                      "Onde exatamente: a marca e o produto do rótulo, ou o site de onde veio o valor pesquisado. Null quando a fonte é taco.",
                   },
                 },
               },

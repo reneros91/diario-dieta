@@ -63,7 +63,7 @@ export type MealRow = {
   updated_at: string;
 };
 
-export type FonteItem = "taco" | "rotulo" | "receita" | "estimativa" | "manual";
+export type FonteItem = "taco" | "rotulo" | "web" | "receita" | "estimativa" | "manual";
 
 export type MealItemRow = {
   id: string;
@@ -73,6 +73,8 @@ export type MealItemRow = {
   unidade: Unidade;
   /** De onde saiu o número desta linha. */
   fonte: FonteItem;
+  /** Onde exatamente: marca do rótulo, site pesquisado. */
+  fonte_detalhe: string | null;
   k100: number;
   p100: number;
   c100: number;
@@ -205,6 +207,8 @@ export type AiCallRow = {
   tokens_cache_read: number;
   tokens_cache_write: number;
   imagens: number;
+  /** Buscas na web feitas pela IA nesta chamada — custam à parte. */
+  buscas: number;
   ms: number;
   custo_usd_est: number;
   entrada_hash: string | null;
@@ -229,9 +233,10 @@ export type Database = {
       meal_items: Tabela<
         MealItemRow,
         // `fonte` tem default no banco e pode faltar num banco sem a 0004.
-        Omit<MealItemRow, "id" | "created_at" | "fonte"> & {
+        Omit<MealItemRow, "id" | "created_at" | "fonte" | "fonte_detalhe"> & {
           id?: string;
           fonte?: FonteItem;
+          fonte_detalhe?: string | null;
         },
         Partial<MealItemRow>,
         [FK<"meal_items_meal_id_fkey", "meal_id", "meals">]
@@ -253,7 +258,12 @@ export type Database = {
       favorites: Tabela<FavoriteRow, Omit<FavoriteRow, "id" | "created_at"> & { id?: string }>;
       messages: Tabela<MessageRow, Omit<MessageRow, "id" | "created_at"> & { id?: string }>;
       taco: Tabela<TacoRow, Omit<TacoRow, "id">>;
-      ai_calls: Tabela<AiCallRow, Omit<AiCallRow, "id" | "created_at"> & { id?: string }>;
+      ai_calls: Tabela<
+        AiCallRow,
+        // `buscas` tem default no banco e falta num banco sem a 0006.
+        Omit<AiCallRow, "id" | "created_at" | "buscas"> & { id?: string; buscas?: number },
+        Partial<AiCallRow>
+      >;
     };
     Views: {
       day_totals: { Row: DayTotalRow; Relationships: [] };

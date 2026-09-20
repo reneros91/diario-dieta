@@ -167,6 +167,7 @@ export function CartaoRefeicao({ refeicao }: { refeicao: MealComItens }) {
 /** Número da tabela é verificável; estimativa não. A tela diz qual é qual. */
 function rotuloFonte(fonte: string): string {
   if (fonte === "taco") return "tabela de alimentos";
+  if (fonte === "web") return "pesquisado";
   if (fonte === "rotulo") return "rótulo";
   if (fonte === "receita") return "receita salva";
   if (fonte === "manual") return "digitado";
@@ -224,6 +225,7 @@ function LinhaItem({
         </p>
         <p className="text-[10px] mt-0.5" style={{ color: corDaFonte(item.fonte) }}>
           {rotuloFonte(item.fonte)}
+          {item.fonte_detalhe ? ` · ${item.fonte_detalhe}` : ""}
         </p>
       </div>
 

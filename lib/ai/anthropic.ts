@@ -33,7 +33,10 @@ export type Uso = {
   cache_creation_input_tokens?: number | null;
 };
 
-export function custoUSD(modelo: string, uso: Uso): number {
+/** USD por busca na web (server tool da Anthropic). */
+export const CUSTO_BUSCA_WEB = 0.01;
+
+export function custoUSD(modelo: string, uso: Uso, buscas = 0): number {
   const p = PRECO[modelo] ?? PRECO["claude-sonnet-5"];
   const leitura = uso.cache_read_input_tokens ?? 0;
   const escrita = uso.cache_creation_input_tokens ?? 0;
@@ -43,7 +46,7 @@ export function custoUSD(modelo: string, uso: Uso): number {
       leitura * p.cacheLeitura +
       escrita * p.cacheEscrita) /
     1_000_000;
-  return Number(total.toFixed(6));
+  return Number((total + buscas * CUSTO_BUSCA_WEB).toFixed(6));
 }
 
 /* ------------------------------------------------------------------ */
@@ -121,6 +124,8 @@ export async function registrarChamada(args: {
   modelo: string;
   uso: Uso;
   imagens: number;
+  /** Buscas na web feitas pela IA; custam à parte do token. */
+  buscas?: number;
   ms: number;
   hash: string;
   resposta: unknown;
@@ -135,8 +140,9 @@ export async function registrarChamada(args: {
     tokens_cache_read: args.uso.cache_read_input_tokens ?? 0,
     tokens_cache_write: args.uso.cache_creation_input_tokens ?? 0,
     imagens: args.imagens,
+    buscas: args.buscas ?? 0,
     ms: args.ms,
-    custo_usd_est: custoUSD(args.modelo, args.uso),
+    custo_usd_est: custoUSD(args.modelo, args.uso, args.buscas ?? 0),
     entrada_hash: args.hash,
     resposta: args.resposta as never,
   });

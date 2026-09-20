@@ -34,6 +34,14 @@ export const maxDuration = 60;
 
 const MAX_IMAGENS = 4;
 const MAX_BYTES_IMAGEM = 4 * 1024 * 1024;
+/** Cada busca é cobrada à parte: teto por mensagem. */
+const MAX_BUSCAS = 4;
+
+/** Quantas buscas o servidor executou — entra no painel de custo. */
+function contarBuscas(msg: Anthropic.Message): number {
+  const uso = msg.usage as { server_tool_use?: { web_search_requests?: number } };
+  return uso.server_tool_use?.web_search_requests ?? 0;
+}
 
 const zBody = z.object({
   texto: z.string().trim().max(2000),
@@ -188,24 +196,86 @@ export async function POST(request: Request) {
   ];
 
   const inicio = Date.now();
+
+  // Busca na web: é o que permite consultar industrializado que não está na
+  // tabela. Com ela, a tool NÃO pode ser forçada — forçar faz o modelo chamar
+  // "registrar" na primeira fala, sem chance de pesquisar antes.
+  const ferramentasComBusca = [
+    TOOL_REGISTRAR,
+    { type: "web_search_20260209", name: "web_search", max_uses: MAX_BUSCAS },
+  ];
+
+  const mensagens: Anthropic.MessageParam[] = [
+    ...anteriores,
+    { role: "user", content: conteudo },
+  ];
+
+  const base = {
+    model: MODELO,
+    system: [
+      { type: "text" as const, text: REGRAS, cache_control: { type: "ephemeral" as const } },
+      { type: "text" as const, text: contexto },
+    ],
+    thinking: { type: "disabled" as const },
+  };
+
   let msg: Anthropic.Message;
+  let buscas = 0;
 
   try {
     msg = await anthropic().messages.create({
-      model: MODELO,
-      max_tokens: 1200,
-      // Extração curta e barata: raciocínio longo aqui só gasta o teto de tokens.
-      thinking: { type: "disabled" },
-      system: [
-        { type: "text", text: REGRAS, cache_control: { type: "ephemeral" } },
-        { type: "text", text: contexto },
-      ],
-      tools: [TOOL_REGISTRAR],
-      tool_choice: { type: "tool", name: "registrar" },
-      messages: [...anteriores, { role: "user", content: conteudo }],
+      ...base,
+      max_tokens: 2400,
+      tools: ferramentasComBusca as Anthropic.ToolUnion[],
+      tool_choice: { type: "auto" },
+      messages: mensagens,
     });
+
+    // O servidor pausa turnos longos de busca; retomar é empurrar de volta.
+    let voltas = 0;
+    while (msg.stop_reason === "pause_turn" && voltas < 3) {
+      mensagens.push({ role: "assistant", content: msg.content });
+      msg = await anthropic().messages.create({
+        ...base,
+        max_tokens: 2400,
+        tools: ferramentasComBusca as Anthropic.ToolUnion[],
+        tool_choice: { type: "auto" },
+        messages: mensagens,
+      });
+      voltas += 1;
+    }
+
+    buscas = contarBuscas(msg);
+
+    // Sem busca disponível o modelo pode terminar sem registrar nada: aí vale
+    // a via antiga, com a ferramenta forçada.
+    if (!msg.content.some((b) => b.type === "tool_use" && b.name === "registrar")) {
+      mensagens.push({ role: "assistant", content: msg.content });
+      mensagens.push({
+        role: "user",
+        content: "Registre agora com a ferramenta, usando o que você já apurou.",
+      });
+      msg = await anthropic().messages.create({
+        ...base,
+        max_tokens: 1600,
+        tools: [TOOL_REGISTRAR],
+        tool_choice: { type: "tool", name: "registrar" },
+        messages: mensagens,
+      });
+    }
   } catch {
-    return erro(ERROS.modelo);
+    // Modelo sem suporte a busca, ou busca indisponível: cai na via direta.
+    try {
+      msg = await anthropic().messages.create({
+        ...base,
+        max_tokens: 1600,
+        tools: [TOOL_REGISTRAR],
+        tool_choice: { type: "tool", name: "registrar" },
+        messages: [...anteriores, { role: "user", content: conteudo }],
+      });
+    } catch {
+      return erro(ERROS.modelo);
+    }
   }
 
   const ms = Date.now() - inicio;
@@ -259,6 +329,7 @@ export async function POST(request: Request) {
     modelo: MODELO,
     uso: msg.usage,
     imagens: imagensBrutas.length,
+    buscas,
     ms,
     hash,
     resposta: { resposta },
@@ -344,6 +415,7 @@ async function aplicar(acao: Acao, ctx: Ctx): Promise<Card | null> {
           qtd: it.quantidade,
           unidade: it.unidade,
           fonte: it.fonte,
+          fonte_detalhe: it.fonte_detalhe ?? null,
           ...p,
           ordem: i,
         };
@@ -355,10 +427,18 @@ async function aplicar(acao: Acao, ctx: Ctx): Promise<Card | null> {
         .select("*");
 
       // Banco ainda sem a migration 0004: grava sem a procedência.
+      // Banco sem a 0006 primeiro, sem a 0004 depois.
+      if (colunaAusente(erroItens, "fonte_detalhe")) {
+        ({ data: gravados, error: erroItens } = await sb
+          .from("meal_items")
+          .insert(semColuna(itens, "fonte_detalhe"))
+          .select("*"));
+      }
+
       if (colunaAusente(erroItens, "fonte")) {
         ({ data: gravados, error: erroItens } = await sb
           .from("meal_items")
-          .insert(semColuna(itens, "fonte"))
+          .insert(semColuna(semColuna(itens, "fonte_detalhe"), "fonte"))
           .select("*"));
       }
 

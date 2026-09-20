@@ -9,11 +9,12 @@ import { chaveAlimento, kcalDeMacros } from "@/lib/calc";
  * não o que ela digitou.
  */
 
-export type FonteItem = "taco" | "rotulo" | "estimativa";
+export type FonteItem = "taco" | "rotulo" | "web" | "estimativa";
 
 export const FONTE_LABEL: Record<FonteItem, string> = {
   taco: "tabela",
   rotulo: "rótulo",
+  web: "web",
   estimativa: "estimativa",
 };
 
@@ -79,6 +80,7 @@ export type ItemBruto = {
   carb: number;
   gord: number;
   fonte?: FonteItem;
+  fonte_detalhe?: string | null;
 };
 
 export type ItemConciliado = ItemBruto & {
@@ -111,6 +113,7 @@ export function conciliarComTaco(
         nome: achado.nome,
         nomeTabela: achado.nome,
         fonte: "taco",
+        fonte_detalhe: null,
         kcal: Math.round(achado.kcal * f),
         prot: arred2(achado.prot * f),
         carb: arred2(achado.carb * f),
@@ -118,7 +121,11 @@ export function conciliarComTaco(
       };
     }
 
-    const fonte: FonteItem = item.fonte === "rotulo" ? "rotulo" : "estimativa";
+    // Rótulo e web são fontes declaradas com endereço; sem endereço, é estimativa.
+    const declarada = item.fonte;
+    const temDetalhe = Boolean(item.fonte_detalhe?.trim());
+    const fonte: FonteItem =
+      (declarada === "rotulo" || declarada === "web") && temDetalhe ? declarada : "estimativa";
     const derivada = kcalDeMacros(item.prot, item.carb, item.gord);
 
     // Álcool tem caloria e nenhum macro: derivar de 4P+4C+9G zeraria a bebida.

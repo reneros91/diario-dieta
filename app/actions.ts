@@ -15,7 +15,7 @@ const zUnidade = z.enum(["g", "ml", "porcao"]);
 const zTipo = z.enum(["cafe", "almoco", "lanche", "jantar", "ceia"]);
 const zDia = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "dia inválido");
 
-const zFonte = z.enum(["taco", "rotulo", "receita", "estimativa", "manual"]);
+const zFonte = z.enum(["taco", "rotulo", "web", "receita", "estimativa", "manual"]);
 
 const zItem = z.object({
   nome: z.string().trim().min(1).max(120),

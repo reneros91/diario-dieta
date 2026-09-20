@@ -203,6 +203,7 @@ function normItens(cru: unknown): unknown[] {
     if (kcal <= 0 && prot === 0 && carb === 0 && gord === 0) continue;
 
     const f = texto(i.fonte)?.toLowerCase();
+    const detalhe = typeof i.fonte_detalhe === "string" ? i.fonte_detalhe.trim().slice(0, 200) : "";
     itens.push({
       nome,
       quantidade,
@@ -211,7 +212,8 @@ function normItens(cru: unknown): unknown[] {
       prot: Number(prot.toFixed(2)),
       carb: Number(carb.toFixed(2)),
       gord: Number(gord.toFixed(2)),
-      fonte: f === "taco" || f === "rotulo" ? f : "estimativa",
+      fonte: f === "taco" || f === "rotulo" || f === "web" ? f : "estimativa",
+      fonte_detalhe: detalhe.length ? detalhe : null,
     });
   }
 

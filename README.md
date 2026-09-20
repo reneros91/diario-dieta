@@ -94,6 +94,31 @@ Para regenerar os tipos depois de mexer no esquema:
 npx supabase gen types typescript --project-id <id> > lib/types/db.ts
 ```
 
+### Regras do motor de IA
+
+Definidas pelo dono e impostas em `lib/ai/prompt.ts` e `lib/ai/taco.ts`:
+
+1. **Nunca inventar macro.** Todo número gravado tem origem declarada.
+2. **Sempre declarar a fonte**, com endereço quando não for a tabela.
+3. **Hierarquia:** tabela → decompor em ingredientes primários da tabela →
+   rótulo da foto → busca na web → perguntar. Estimar não está na lista.
+4. **Industrializado vai para a web**, porque não está na tabela.
+5. **Sem fonte, não registra** — a IA pede o que falta em vez de chutar.
+
+O código não confia na declaração: `conciliarComTaco()` confere o nome contra o
+banco e, quando bate, **os valores do banco substituem os da IA**. Fonte `rotulo`
+ou `web` sem `fonte_detalhe` preenchido é rebaixada para `estimativa` — fonte sem
+endereço é chute com crachá.
+
+A busca usa a ferramenta `web_search` da Anthropic, server-side. Duas consequências:
+
+- **A ferramenta não pode ser forçada.** Com `tool_choice` forçado o modelo chama
+  `registrar` na primeira fala e nunca pesquisa. A rota usa `auto`, trata
+  `pause_turn` e, se o turno terminar sem registro, refaz a chamada com a
+  ferramenta forçada.
+- **Busca custa por uso.** Teto de 4 por mensagem, contagem gravada em
+  `ai_calls.buscas` e somada ao custo estimado no `/admin`.
+
 ### Auth
 
 Login por **e-mail e senha** (`signInWithPassword`), com cadastro em `/cadastro`

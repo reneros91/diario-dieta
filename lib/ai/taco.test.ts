@@ -77,12 +77,76 @@ describe("conciliarComTaco", () => {
     expect(r.nomeTabela).toBeNull();
   });
 
-  it("rótulo lido na foto é preservado como rótulo", () => {
+  it("rótulo com a marca declarada é preservado como rótulo", () => {
     const [r] = conciliarComTaco(
-      [item({ nome: "Barra XYZ", quantidade: 40, prot: 10, carb: 20, gord: 6, fonte: "rotulo" })],
+      [
+        item({
+          nome: "Barra XYZ",
+          quantidade: 40,
+          prot: 10,
+          carb: 20,
+          gord: 6,
+          fonte: "rotulo",
+          fonte_detalhe: "Rótulo Whey Bar Integralmédica",
+        }),
+      ],
       mapa,
     );
     expect(r.fonte).toBe("rotulo");
+  });
+
+  it("valor pesquisado com o site declarado vira fonte web", () => {
+    const [r] = conciliarComTaco(
+      [
+        item({
+          nome: "Bis Lacta",
+          quantidade: 30,
+          prot: 2,
+          carb: 20,
+          gord: 7,
+          fonte: "web",
+          fonte_detalhe: "lacta.com.br",
+        }),
+      ],
+      mapa,
+    );
+    expect(r.fonte).toBe("web");
+  });
+
+  it("fonte sem endereço não vale: vira estimativa", () => {
+    // A regra é fonte verificável. 'web' sem dizer onde é chute com crachá.
+    const [r] = conciliarComTaco(
+      [item({ nome: "Bolo qualquer", quantidade: 80, prot: 4, carb: 30, gord: 10, fonte: "web" })],
+      mapa,
+    );
+    expect(r.fonte).toBe("estimativa");
+  });
+
+  it("detalhe em branco também não conta como fonte", () => {
+    const [r] = conciliarComTaco(
+      [
+        item({
+          nome: "Coisa",
+          quantidade: 50,
+          prot: 2,
+          carb: 8,
+          gord: 1,
+          fonte: "rotulo",
+          fonte_detalhe: "   ",
+        }),
+      ],
+      mapa,
+    );
+    expect(r.fonte).toBe("estimativa");
+  });
+
+  it("item da tabela não carrega detalhe: o nome já é a fonte", () => {
+    const [r] = conciliarComTaco(
+      [item({ nome: "Arroz branco cozido", quantidade: 100, fonte_detalhe: "sei lá" })],
+      mapa,
+    );
+    expect(r.fonte).toBe("taco");
+    expect(r.fonte_detalhe).toBeNull();
   });
 
   it("estimativa sai sempre com kcal fechando com 4P + 4C + 9G", () => {
