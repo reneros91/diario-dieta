@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { supabaseServer, usuarioAtual } from "@/lib/supabase/server";
 import { alvos, hojeISO, somaDias, tendencia, type Alvos, type PerfilCalc } from "@/lib/calc";
 import type {
@@ -10,8 +11,13 @@ import type {
   WorkoutRow,
 } from "@/lib/types/db";
 
-/** Perfil da pessoa logada. O trigger do banco cria um na primeira entrada. */
-export async function getPerfil(): Promise<ProfileRow> {
+/**
+ * Perfil da pessoa logada. O trigger do banco cria um na primeira entrada.
+ *
+ * Embrulhado em `cache`: o topo fixo e a própria aba pedem o perfil na mesma
+ * navegação, e sem isso são duas consultas idênticas por troca de aba.
+ */
+export const getPerfil = cache(async function getPerfil(): Promise<ProfileRow> {
   const sb = await supabaseServer();
   const user = await usuarioAtual();
   if (!user) throw new Error("sem sessão");
@@ -27,7 +33,7 @@ export async function getPerfil(): Promise<ProfileRow> {
     .single();
   if (error) throw error;
   return criado;
-}
+});
 
 export function perfilParaCalc(p: ProfileRow): PerfilCalc {
   return {
@@ -45,10 +51,13 @@ export function perfilParaCalc(p: ProfileRow): PerfilCalc {
   };
 }
 
-export async function getPerfilEAlvos(): Promise<{ perfil: ProfileRow; alvo: Alvos }> {
+export const getPerfilEAlvos = cache(async function getPerfilEAlvos(): Promise<{
+  perfil: ProfileRow;
+  alvo: Alvos;
+}> {
   const perfil = await getPerfil();
   return { perfil, alvo: alvos(perfilParaCalc(perfil)) };
-}
+});
 
 export async function getTotaisDia(dia: string): Promise<DayTotalRow | null> {
   const sb = await supabaseServer();

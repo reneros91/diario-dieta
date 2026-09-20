@@ -34,8 +34,11 @@ export const maxDuration = 60;
 
 const MAX_IMAGENS = 4;
 const MAX_BYTES_IMAGEM = 4 * 1024 * 1024;
-/** Cada busca é cobrada à parte: teto por mensagem. */
-const MAX_BUSCAS = 4;
+/**
+ * Cada busca custa dinheiro e, principalmente, tempo: a função da Vercel é
+ * cortada em 60 s. Duas buscas cabem com folga; quatro não cabiam.
+ */
+const MAX_BUSCAS = 2;
 
 /** Quantas buscas o servidor executou — entra no painel de custo. */
 function contarBuscas(msg: Anthropic.Message): number {
@@ -233,7 +236,7 @@ export async function POST(request: Request) {
 
     // O servidor pausa turnos longos de busca; retomar é empurrar de volta.
     let voltas = 0;
-    while (msg.stop_reason === "pause_turn" && voltas < 3) {
+    while (msg.stop_reason === "pause_turn" && voltas < 1) {
       mensagens.push({ role: "assistant", content: msg.content });
       msg = await anthropic().messages.create({
         ...base,

@@ -6,7 +6,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-dvh flex flex-col">
       <TopoDia />
-      <main className="flex-1 mx-auto w-full max-w-lg px-4 pt-4 pb-28">{children}</main>
+      <main className="flex-1 mx-auto w-full max-w-lg px-4 pt-4 pb-24">{children}</main>
       <Abas />
     </div>
   );

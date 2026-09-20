@@ -11,6 +11,11 @@ import type { Card } from "@/app/api/chat/route";
 import type { MessageRow } from "@/lib/types/db";
 
 const MAX_FOTOS = 4;
+/** Teto do lado do cliente. Com busca na web a resposta demora bem mais. */
+const TIMEOUT_MS = 90_000;
+
+/** Altura reservada para o compositor fixo + barra de abas + safe area. */
+const ALTURA_COMPOSITOR = "calc(env(safe-area-inset-bottom) + 190px)";
 
 const EXEMPLOS = [
   "2 ovos mexidos e um pão francês com requeijão",
@@ -50,8 +55,11 @@ export function Conversa({ historico }: { historico: MessageRow[] }) {
   const arquivoRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    // "end" alinha o fim do alvo com o fim da tela, e o scroll-margin do
+    // alvo desconta a altura do compositor. Com "nearest" o navegador não
+    // rolava nada: o alvo já estava na viewport, só que atrás do compositor.
     fim.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [mensagens.length, analisando]);
+  }, [mensagens.length, analisando, erro, problemas.length]);
 
   async function escolherFotos(lista: FileList | null) {
     if (!lista?.length) return;
@@ -89,16 +97,33 @@ export function Conversa({ historico }: { historico: MessageRow[] }) {
     const enviadas = fotos;
     setFotos([]);
 
+    const corta = new AbortController();
+    const relogio = setTimeout(() => corta.abort(), TIMEOUT_MS);
+
     try {
       const r = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ texto: conteudo, imagens: enviadas }),
+        signal: corta.signal,
       });
-      const dados = await r.json();
+
+      // Servidor que estourou o tempo devolve HTML, não JSON. Ler isso como
+      // JSON estoura uma exceção que parecia falta de internet — e não era.
+      const dados = await r.json().catch(() => null);
 
       if (!r.ok) {
-        setErro(dados.message ?? "Não deu certo. Tente de novo.");
+        setErro(
+          dados?.message ??
+            (r.status >= 500
+              ? `O servidor não concluiu (erro ${r.status}). Se a IA estava pesquisando, tente de novo.`
+              : `Não deu certo (erro ${r.status}).`),
+        );
+        return;
+      }
+
+      if (!dados) {
+        setErro("O servidor respondeu em um formato que não entendi.");
         return;
       }
 
@@ -116,9 +141,14 @@ export function Conversa({ historico }: { historico: MessageRow[] }) {
       // registro não existe.
       setProblemas(dados.problemas ?? []);
       router.refresh();
-    } catch {
-      setErro("Sem conexão com o servidor.");
+    } catch (e) {
+      setErro(
+        e instanceof DOMException && e.name === "AbortError"
+          ? "Demorou demais e eu cancelei. Se a IA precisou pesquisar na internet, tente de novo ou descreva com o peso."
+          : "Sem conexão com o servidor.",
+      );
     } finally {
+      clearTimeout(relogio);
       setAnalisando(false);
     }
   }
@@ -174,7 +204,11 @@ export function Conversa({ historico }: { historico: MessageRow[] }) {
       ))}
 
       {analisando && (
-        <p className="anim-pulso text-sm text-muted" aria-live="polite">
+        <p
+          className="anim-pulso text-sm text-muted"
+          aria-live="polite"
+          style={{ scrollMarginBottom: ALTURA_COMPOSITOR }}
+        >
           Analisando…
         </p>
       )}
@@ -207,7 +241,10 @@ export function Conversa({ historico }: { historico: MessageRow[] }) {
         </div>
       )}
 
-      <div ref={fim} />
+      {/* Reserva a altura do compositor fixo: sem isto, "Analisando…" e os
+          erros nascem atrás dele e só aparecem rolando à mão. */}
+      <div ref={fim} className="h-2" style={{ scrollMarginBottom: ALTURA_COMPOSITOR }} />
+      <div aria-hidden style={{ height: ALTURA_COMPOSITOR }} />
 
       <div
         className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-bg/95 backdrop-blur"
