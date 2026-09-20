@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { mensagemErro } from "@/lib/auth";
 import { CampoSenha } from "@/components/CampoSenha";
+import { Logo } from "@/components/Logo";
 
 export default function LoginPage() {
   return (
@@ -49,8 +50,11 @@ function Login() {
   return (
     <main className="min-h-dvh flex flex-col justify-center px-6 py-12">
       <div className="mx-auto w-full max-w-sm">
-        <h1 className="display text-4xl font-semibold tracking-tight">Balanço</h1>
-        <p className="mt-2 text-muted text-sm">Diário alimentar e corporal.</p>
+        <h1>
+          <Logo largura={210} prioridade />
+          <span className="sr-only">NutriDia</span>
+        </h1>
+        <p className="mt-3 text-muted text-sm">Diário alimentar e corporal.</p>
 
         <form onSubmit={entrar} className="mt-8 space-y-4">
           <div>

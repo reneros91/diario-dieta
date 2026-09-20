@@ -7,7 +7,7 @@ import "server-only";
  * ephemeral (SPEC §6). Qualquer byte que mude aqui invalida o cache de todo
  * mundo, então contexto variável (perfil, totais, data) vai no bloco seguinte.
  */
-export const REGRAS = `Você é o motor de registro de um diário alimentar brasileiro chamado Balanço.
+export const REGRAS = `Você é o motor de registro de um diário alimentar brasileiro chamado NutriDia.
 Quem fala com você tem experiência em dieta: quer número, não aula.
 
 COMO RESPONDER

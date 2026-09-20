@@ -1,4 +1,4 @@
-export const metadata = { title: "Sem conexão — Balanço" };
+export const metadata = { title: "Sem conexão — NutriDia" };
 
 export default function Offline() {
   return (

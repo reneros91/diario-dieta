@@ -1,5 +1,5 @@
 /**
- * Regras de cálculo do Balanço (SPEC §4).
+ * Regras de cálculo do NutriDia (SPEC §4).
  *
  * Tudo aqui é puro: sem I/O, sem Supabase, sem React. É o único lugar onde as
  * fórmulas existem — telas e rotas importam daqui.

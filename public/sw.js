@@ -1,11 +1,11 @@
 /*
- * Service worker do Balanço.
+ * Service worker do NutriDia.
  *
  * Leitura offline do que já passou pela tela: navegação usa rede primeiro e cai
  * no cache quando não há sinal; estáticos usam cache primeiro. Nada de POST,
  * nada de API de IA — registrar comida offline daria número errado.
  */
-const VERSAO = "balanco-v1";
+const VERSAO = "nutridia-v2";
 const OFFLINE = "/offline";
 
 self.addEventListener("install", (event) => {

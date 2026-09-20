@@ -1,7 +1,8 @@
 import { faltaNoAmbiente } from "@/lib/env";
+import { Logo } from "@/components/Logo";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Falta configurar — Balanço" };
+export const metadata = { title: "Falta configurar — NutriDia" };
 
 /**
  * Tela que aparece enquanto o app não tem Supabase.
@@ -42,7 +43,10 @@ export default function Configurar() {
   return (
     <main className="min-h-dvh px-6 py-12">
       <div className="mx-auto w-full max-w-lg">
-        <h1 className="display text-3xl font-semibold tracking-tight">Balanço</h1>
+        <h1>
+          <Logo largura={190} prioridade />
+          <span className="sr-only">NutriDia</span>
+        </h1>
         <p className="mt-2 text-muted">
           O app está instalado e funcionando, mas ainda não sabe onde guardar os dados. Faltam as
           chaves de acesso.

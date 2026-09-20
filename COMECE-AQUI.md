@@ -1,6 +1,6 @@
 # Comece aqui
 
-Guia para colocar o Balanço no ar do zero, sem precisar saber programar. São três contas
+Guia para colocar o NutriDia no ar do zero, sem precisar saber programar. São três contas
 gratuitas (GitHub, Supabase, Vercel) e uma paga por uso (Anthropic). Reserve uns 40 minutos.
 
 Quem já é técnico pode ir direto ao [`README.md`](./README.md).

@@ -16,11 +16,11 @@ const manrope = Manrope({
 });
 
 export const metadata: Metadata = {
-  title: "Balanço",
+  title: "NutriDia",
   description: "Diário alimentar e corporal em formato de conversa.",
   manifest: "/manifest.webmanifest",
-  appleWebApp: { capable: true, title: "Balanço", statusBarStyle: "default" },
-  icons: { icon: "/icons/icone-192.png", apple: "/icons/icone-192.png" },
+  appleWebApp: { capable: true, title: "NutriDia", statusBarStyle: "default" },
+  icons: { icon: "/icons/icone-192.png", apple: "/icons/apple-touch-icon.png" },
 };
 
 export const viewport: Viewport = {

@@ -1,4 +1,4 @@
-# Balanço
+# NutriDia
 
 Diário alimentar e corporal em formato de conversa. A pessoa fala o que comeu, treinou, pesou e
 dormiu; a IA separa em ingredientes com kcal e macros; a pessoa confere e edita linha a linha.
@@ -149,7 +149,7 @@ pode ser trocado a qualquer momento (o antigo deixa de valer na hora).
 
 ### Montando o Atalho
 
-1. App **Atalhos** → **+** → nomeie "Balanço da manhã".
+1. App **Atalhos** → **+** → nomeie "NutriDia da manhã".
 2. **Data** → ajuste para ontem: ação *Data* com "Ajustar Data" de −1 dia. Formate como
    `aaaa-MM-dd` com *Formatar Data* e guarde em uma variável `dia`.
 3. **Buscar amostras de saúde** → Tipo: *Passos*, Período: *Ontem*, Operação: *Soma*. Guarde em
@@ -222,3 +222,27 @@ Testado automaticamente: fórmulas (`lib/calc.test.ts`) e normalização das res
 (`lib/ai/normalize.test.ts`), incluindo o caso da fatia de pizza de 140 g da §11. O que depende de
 Supabase e da API da Anthropic ativos — RLS entre duas contas reais, foto de rótulo, limite diário
 estourando — precisa de verificação manual com as chaves no lugar.
+
+## Marca
+
+O logo e o ícone vêm de uma única arte, processada em `public/`:
+
+| Arquivo | Onde aparece |
+| --- | --- |
+| `logo-nutridia.png` / `-escuro.png` | lockup completo — login e `/configurar` |
+| `simbolo-nutridia.png` / `-escuro.png` | só a tigela — topo do cadastro |
+| `icons/icone-{192,512}.png` | ícone do PWA e da aba |
+| `icons/apple-touch-icon.png` | tela de início do iPhone |
+| `icons/icone-maskable-512.png` | Android, com folga para o recorte circular |
+
+Duas artes em vez de um filtro de CSS: no modo escuro o azul-marinho da palavra sumiria no fundo
+`#111614`, então existe uma versão com esse azul clareado. O componente `components/Logo.tsx`
+troca entre elas por `prefers-color-scheme`.
+
+Os ícones têm fundo branco sólido de propósito — o iOS não respeita transparência e preencheria
+com preto.
+
+> **Pendente:** a paleta do app (acento verde `#1F7A63`, definida na SPEC §8) é anterior a esta
+> marca e não conversa com o azul e o laranja do logo — o botão da tela de login é verde embaixo
+> de um logo azul. Trocar os tokens de `app/globals.css` para o azul `#1048B0` e o laranja
+> `#F09C60` resolve, mas muda o app inteiro, então está esperando decisão.

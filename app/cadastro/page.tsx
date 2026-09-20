@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { SENHA_MINIMA, TEXTO_PROBLEMA, mensagemErro, validarSenha } from "@/lib/auth";
 import { CampoSenha } from "@/components/CampoSenha";
+import { Simbolo } from "@/components/Logo";
 
 export default function CadastroPage() {
   const router = useRouter();
@@ -60,7 +61,8 @@ export default function CadastroPage() {
   return (
     <main className="min-h-dvh flex flex-col justify-center px-6 py-12">
       <div className="mx-auto w-full max-w-sm">
-        <h1 className="display text-4xl font-semibold tracking-tight">Criar conta</h1>
+        <Simbolo tamanho={52} />
+        <h1 className="display mt-3 text-4xl font-semibold tracking-tight">Criar conta</h1>
         <p className="mt-2 text-muted text-sm">
           Só o e-mail e uma senha. Seus dados ficam separados dos de qualquer outra pessoa.
         </p>
