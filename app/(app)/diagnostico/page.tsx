@@ -7,6 +7,28 @@ export const metadata = { title: "Diagnóstico — NutriDia" };
 
 type Checagem = { nome: string; ok: boolean; detalhe: string };
 
+/** O rastro que /api/chat grava em `ai_calls.resposta` a cada chamada. */
+type ItemRastro = {
+  nome?: string;
+  qtd?: number;
+  unidade?: string;
+  kcal?: number;
+  alcool?: number;
+  fonte?: string;
+  fonte_detalhe?: string | null;
+};
+
+type Rastro = {
+  pergunta?: string;
+  buscas?: number;
+  consultas?: string[];
+  falhaBusca?: string | null;
+  candidatosTaco?: string[];
+  itensDaIA?: ItemRastro[];
+  itensGravados?: ItemRastro[];
+  problemas?: string[];
+};
+
 /**
  * Diagnóstico: por que um registro não apareceu.
  *
@@ -137,7 +159,7 @@ export default async function Diagnostico() {
   /* IA --------------------------------------------------------------- */
   const { data: chamadas, error: erroChamadas } = await sb
     .from("ai_calls")
-    .select("tipo, modelo, tokens_in, tokens_out, ms, created_at")
+    .select("tipo, modelo, tokens_in, tokens_out, ms, created_at, resposta")
     .order("created_at", { ascending: false })
     .limit(5);
 
@@ -207,6 +229,108 @@ export default async function Diagnostico() {
           </li>
         ))}
       </ul>
+
+      <section className="rounded-card bg-card border border-line shadow-card p-4">
+        <h2 className="text-sm font-semibold">O que a IA fez nas últimas conversas</h2>
+        <p className="mt-0.5 text-[11px] text-muted">
+          Para cada pergunta: se ela pesquisou, o que devolveu e o que o app gravou.
+        </p>
+
+        {(chamadas ?? []).filter((c) => c.tipo === "chat").length === 0 ? (
+          <p className="mt-2 text-sm text-muted">
+            Nenhuma conversa registrada ainda. Mande uma mensagem no chat e volte aqui.
+          </p>
+        ) : (
+          <ul className="mt-3 space-y-3">
+            {(chamadas ?? [])
+              .filter((c) => c.tipo === "chat")
+              .map((c) => {
+                const r = (c.resposta ?? {}) as Rastro;
+                const antigo = r.itensDaIA === undefined;
+                return (
+                  <li key={c.created_at} className="rounded-btn border border-line p-3">
+                    <p className="num text-[11px] text-muted">
+                      {c.created_at.slice(0, 16).replace("T", " ")} · {c.ms} ms
+                    </p>
+
+                    {r.pergunta && <p className="mt-1 text-sm">“{r.pergunta}”</p>}
+
+                    {antigo ? (
+                      <p className="mt-1 text-[11px] text-muted">
+                        Conversa anterior à gravação do rastro — só o texto da resposta foi guardado.
+                      </p>
+                    ) : (
+                      <>
+                        <p
+                          className="mt-2 text-[11px]"
+                          style={{ color: r.falhaBusca ? "var(--over)" : "var(--muted)" }}
+                        >
+                          {r.falhaBusca
+                            ? `Busca na web FALHOU: ${r.falhaBusca}`
+                            : r.buscas
+                              ? `Pesquisou ${r.buscas}× na web: ${(r.consultas ?? []).join(" · ") || "sem consulta registrada"}`
+                              : "Não pesquisou na web."}
+                        </p>
+
+                        <p className="mt-1 text-[11px] text-muted">
+                          Alimentos da tabela oferecidos:{" "}
+                          {(r.candidatosTaco ?? []).length
+                            ? (r.candidatosTaco ?? []).slice(0, 6).join(", ")
+                            : "nenhum casou com o texto"}
+                        </p>
+
+                        {(r.itensDaIA ?? []).length > 0 && (
+                          <table className="mt-2 w-full text-[11px]">
+                            <thead className="text-muted">
+                              <tr>
+                                <th className="text-left font-normal">item</th>
+                                <th className="text-right font-normal">IA</th>
+                                <th className="text-right font-normal">gravado</th>
+                                <th className="text-left font-normal pl-2">fonte</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {(r.itensDaIA ?? []).map((ia, i) => {
+                                const gravado = (r.itensGravados ?? [])[i];
+                                const divergiu =
+                                  gravado && Math.round(ia.kcal ?? 0) !== Math.round(gravado.kcal ?? 0);
+                                return (
+                                  <tr key={`${ia.nome}-${i}`}>
+                                    <td className="truncate max-w-[9rem]">
+                                      {ia.nome}
+                                      {ia.alcool ? ` · ${ia.alcool} g álcool` : ""}
+                                    </td>
+                                    <td className="num text-right">{ia.kcal}</td>
+                                    <td
+                                      className="num text-right"
+                                      style={{ color: divergiu ? "var(--over)" : undefined }}
+                                    >
+                                      {gravado ? gravado.kcal : "—"}
+                                    </td>
+                                    <td className="pl-2 truncate max-w-[8rem] text-muted">
+                                      {gravado?.fonte ?? ia.fonte}
+                                      {ia.fonte_detalhe ? ` · ${ia.fonte_detalhe}` : ""}
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        )}
+
+                        {(r.problemas ?? []).length > 0 && (
+                          <p className="mt-2 text-[11px]" style={{ color: "var(--over)" }}>
+                            {(r.problemas ?? []).join(" · ")}
+                          </p>
+                        )}
+                      </>
+                    )}
+                  </li>
+                );
+              })}
+          </ul>
+        )}
+      </section>
 
       <section className="rounded-card bg-card border border-line shadow-card p-4">
         <h2 className="text-sm font-semibold">Últimas refeições gravadas</h2>

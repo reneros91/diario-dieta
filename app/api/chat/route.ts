@@ -46,6 +46,34 @@ function contarBuscas(msg: Anthropic.Message): number {
   return uso.server_tool_use?.web_search_requests ?? 0;
 }
 
+/** O que a IA de fato digitou na busca. É o que diz se ela procurou direito. */
+function consultasDeBusca(msg: Anthropic.Message): string[] {
+  return msg.content
+    .filter((b) => b.type === "server_tool_use" && b.name === "web_search")
+    .map((b) => {
+      const entrada = (b as { input?: { query?: unknown } }).input;
+      return typeof entrada?.query === "string" ? entrada.query : "";
+    })
+    .filter(Boolean);
+}
+
+/** Os itens como a IA mandou, antes de o app conferir contra a tabela. */
+function itensDasAcoes(acoes: Acao[]) {
+  return acoes
+    .filter((a): a is Extract<Acao, { tipo: "refeicao" }> => a.tipo === "refeicao")
+    .flatMap((a) =>
+      a.itens.map((i) => ({
+        nome: i.nome,
+        qtd: i.quantidade,
+        unidade: i.unidade,
+        kcal: i.kcal,
+        alcool: i.alcool,
+        fonte: i.fonte,
+        fonte_detalhe: i.fonte_detalhe,
+      })),
+    );
+}
+
 const zBody = z.object({
   texto: z.string().trim().max(2000),
   imagens: z.array(z.string()).max(MAX_IMAGENS).optional(),
@@ -224,6 +252,9 @@ export async function POST(request: Request) {
 
   let msg: Anthropic.Message;
   let buscas = 0;
+  // Sem isto a via de busca podia falhar em silêncio: o catch caía na via antiga
+  // e ninguém ficava sabendo que industrializado nenhum foi pesquisado.
+  let falhaBusca: string | null = null;
 
   try {
     msg = await anthropic().messages.create({
@@ -266,8 +297,9 @@ export async function POST(request: Request) {
         messages: mensagens,
       });
     }
-  } catch {
+  } catch (e) {
     // Modelo sem suporte a busca, ou busca indisponível: cai na via direta.
+    falhaBusca = e instanceof Error ? e.message.slice(0, 300) : "erro desconhecido";
     try {
       msg = await anthropic().messages.create({
         ...base,
@@ -326,6 +358,9 @@ export async function POST(request: Request) {
     },
   ]);
 
+  // Rastro da chamada: sem ele, "a pesquisa erra feio" é impossível de
+  // investigar — não dá para saber se a IA pesquisou, o que ela devolveu, nem
+  // se foi o app que estragou o número depois. A tela /diagnostico lê isto.
   await registrarChamada({
     userId: user.id,
     tipo: "chat",
@@ -335,7 +370,28 @@ export async function POST(request: Request) {
     buscas,
     ms,
     hash,
-    resposta: { resposta },
+    resposta: {
+      resposta,
+      pergunta: texto.slice(0, 300),
+      buscas,
+      consultas: consultasDeBusca(msg),
+      falhaBusca,
+      candidatosTaco: (candidatos ?? []).map((c) => c.nome),
+      itensDaIA: itensDasAcoes(acoes),
+      itensGravados: cards
+        .filter((c): c is Extract<Card, { tipo: "refeicao" }> => c.tipo === "refeicao")
+        .flatMap((c) =>
+          c.refeicao.meal_items.map((i) => ({
+            nome: i.nome,
+            qtd: Number(i.qtd),
+            unidade: i.unidade,
+            kcal: Math.round((Number(i.qtd) * Number(i.k100)) / 100),
+            fonte: i.fonte,
+            fonte_detalhe: i.fonte_detalhe,
+          })),
+        ),
+      problemas,
+    },
   });
 
   // A IA não cita totais; quem cita é o app, com o número que foi gravado.

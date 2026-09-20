@@ -224,3 +224,52 @@ describe("normItensReceita", () => {
     expect(normItensReceita([{ nome: "Sal", kcal: 0 }])).toHaveLength(0);
   });
 });
+
+describe("álcool no normalizador", () => {
+  const item = (extra: Record<string, unknown>) =>
+    (
+      normAcoes(
+        [
+          {
+            tipo: "refeicao",
+            refeicao: "jantar",
+            nome: "Bar",
+            itens: [{ nome: "Cerveja", quantidade: 350, unidade: "ml", ...extra }],
+          },
+        ],
+        20,
+      )[0] as { itens: { kcal: number; alcool: number }[] }
+    ).itens[0];
+
+  it("aceita a caloria da lata porque o álcool declarado a explica", () => {
+    // 1,75 P + 12,6 C + 13,8 g de álcool = 7 + 50,4 + 96,6 = 154 kcal, e os
+    // 147 do rótulo caem dentro dos 5% — então vale o número do rótulo.
+    const i = item({ kcal: 147, prot: 1.75, carb: 12.6, gord: 0, alcool: 13.8 });
+    expect(i.alcool).toBe(13.8);
+    expect(i.kcal).toBe(147);
+  });
+
+  it("calcula pela fórmula quando a IA não manda caloria nenhuma", () => {
+    expect(item({ prot: 1.75, carb: 12.6, gord: 0, alcool: 13.8 }).kcal).toBe(154);
+  });
+
+  it("preserva a caloria da bebida quando o álcool não vem declarado", () => {
+    // Antes o normalizador devolvia 57 aqui: 4P + 4C e nada mais.
+    expect(item({ kcal: 147, prot: 1.75, carb: 12.6, gord: 0 }).kcal).toBe(147);
+  });
+
+  it("não deixa sólido inflar a caloria pela mesma brecha", () => {
+    const acoes = normAcoes(
+      [
+        {
+          tipo: "refeicao",
+          refeicao: "almoco",
+          nome: "Salada",
+          itens: [{ nome: "Alface", quantidade: 100, unidade: "g", kcal: 900, prot: 1, carb: 2, gord: 0 }],
+        },
+      ],
+      12,
+    ) as { itens: { kcal: number }[] }[];
+    expect(acoes[0].itens[0].kcal).toBe(12);
+  });
+});

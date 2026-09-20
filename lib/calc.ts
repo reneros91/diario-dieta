@@ -191,9 +191,28 @@ export function somaMacros(itens: ItemMacro[]): Macros {
   }, { ...MACROS_ZERO });
 }
 
-/** kcal derivadas dos macros: 4P + 4C + 9G. Usada para conferir o que a IA devolve. */
-export function kcalDeMacros(prot: number, carb: number, gord: number): number {
-  return 4 * prot + 4 * carb + 9 * gord;
+/**
+ * kcal derivadas dos macros: 4P + 4C + 9G + 7A. Usada para conferir o que a IA
+ * devolve.
+ *
+ * O álcool é o quarto termo e não é opcional por elegância: ele tem caloria e
+ * não é nenhum dos três macros. Sem ele, uma cerveja de 42 kcal vira 16 —
+ * porque só sobram o resto de proteína e o carboidrato residual.
+ */
+export function kcalDeMacros(
+  prot: number,
+  carb: number,
+  gord: number,
+  alcool = 0,
+): number {
+  return 4 * prot + 4 * carb + 9 * gord + 7 * alcool;
+}
+
+const DENSIDADE_ETANOL = 0.789;
+
+/** Gramas de álcool puro num volume, pelo teor declarado no rótulo. */
+export function gramasDeAlcool(ml: number, teorPct: number): number {
+  return Math.round(ml * (teorPct / 100) * DENSIDADE_ETANOL * 100) / 100;
 }
 
 /**

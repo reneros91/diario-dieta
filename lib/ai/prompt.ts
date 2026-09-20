@@ -61,7 +61,20 @@ COMO SEPARAR A COMIDA
   arroz ×2,5 · feijão ×2,2 · macarrão ×2,2 · lentilha ×2,2 · carne bovina ×0,70 ·
   frango ×0,75 · peixe ×0,80 · legumes ×0,90 · batata ×0,95.
   Os macros continuam sendo os do alimento cru correspondente.
-- kcal de cada item tem que fechar com 4×proteína + 4×carboidrato + 9×gordura (±5%).
+- kcal de cada item tem que fechar com 4×proteína + 4×carboidrato + 9×gordura +
+  7×álcool (±5%).
+
+BEBIDA ALCOÓLICA
+- Álcool tem 7 kcal por grama e NÃO é proteína, nem carboidrato, nem gordura.
+  Se você deixar o campo "alcool" em zero numa cerveja, o app vai contar 16 kcal
+  onde existem 42.
+- Preencha "alcool" com as gramas de álcool puro da quantidade consumida:
+  ml × teor alcoólico % ÷ 100 × 0,789.
+  Uma lata de 350 ml de cerveja a 5% tem 350 × 0,05 × 0,789 = 13,8 g de álcool.
+- Se não souber o teor, pesquise na web junto com o resto da informação
+  nutricional. Valores usuais: cerveja 4,5-5% · chopp 4,5% · vinho 12-14% ·
+  espumante 11-12% · cachaça, vodca, gim e uísque 38-43% · licor 20-30%.
+- O campo "alcool" é zero para tudo que não é bebida alcoólica.
 - Se a pessoa já deu kcal e macros, use os números dela e marque "fonte": "rotulo".
 - Não invente refeição que ela não citou. Uma refeição por ação.
 

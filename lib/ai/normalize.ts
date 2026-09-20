@@ -58,17 +58,32 @@ function normRefeicao(v: unknown, hora: number): Refeicao {
 const ATIVIDADES = ["sentado", "leve", "ativo"] as const;
 
 /**
- * Só aceita kcal que fecham com 4P + 4C + 9G dentro de 5% (SPEC §6.5 e §11);
+ * Só aceita kcal que fecham com 4P + 4C + 9G + 7A dentro de 5% (SPEC §6.5 e §11);
  * fora disso, vale o que os macros dizem — eles é que somam no cartão.
  */
 const TOLERANCIA_KCAL = 0.05;
 
-function ajustaKcal(kcal: number | null, prot: number, carb: number, gord: number): number {
-  const derivada = kcalDeMacros(prot, carb, gord);
+function ajustaKcal(
+  kcal: number | null,
+  prot: number,
+  carb: number,
+  gord: number,
+  alcool = 0,
+  unidade: "g" | "ml" = "g",
+): number {
+  const derivada = kcalDeMacros(prot, carb, gord, alcool);
   if (kcal === null || kcal <= 0) return Math.round(derivada);
   if (derivada <= 0) return Math.round(kcal);
+
   const desvio = Math.abs(kcal - derivada) / derivada;
-  return Math.round(desvio > TOLERANCIA_KCAL ? derivada : kcal);
+  if (desvio <= TOLERANCIA_KCAL) return Math.round(kcal);
+
+  // Caloria a MENOS que os macros declarados é contradição: a IA se desmente,
+  // e quem manda é o macro. Caloria a MAIS, num líquido, é álcool que ela
+  // esqueceu de declarar — manter o número dela erra menos do que transformar
+  // uma cerveja em 16 kcal. Em sólido a sobra não tem de onde vir: clampa.
+  if (kcal > derivada && unidade === "ml") return Math.round(kcal);
+  return Math.round(derivada);
 }
 
 type Bruta = Record<string, unknown>;
@@ -155,12 +170,14 @@ export function normAcoes(acoes: unknown, hora: number): unknown[] {
         const prot = Math.max(0, numero(a.prot) ?? 0);
         const carb = Math.max(0, numero(a.carb) ?? 0);
         const gord = Math.max(0, numero(a.gord) ?? 0);
+        const alcool = Math.max(0, numero(a.alcool) ?? 0);
+        const unidade = texto(a.unidade) === "ml" ? "ml" : "g";
         saida.push({
           tipo: "alimento",
           nome,
           porcao,
-          unidade: texto(a.unidade) === "ml" ? "ml" : "g",
-          kcal: ajustaKcal(numero(a.kcal), prot, carb, gord),
+          unidade,
+          kcal: ajustaKcal(numero(a.kcal), prot, carb, gord, alcool, unidade),
           prot,
           carb,
           gord,
@@ -197,7 +214,9 @@ function normItens(cru: unknown): unknown[] {
     const prot = Math.max(0, numero(i.prot ?? i.proteina) ?? 0);
     const carb = Math.max(0, numero(i.carb ?? i.carboidrato) ?? 0);
     const gord = Math.max(0, numero(i.gord ?? i.gordura) ?? 0);
-    const kcal = ajustaKcal(numero(i.kcal ?? i.calorias), prot, carb, gord);
+    const alcool = Math.max(0, numero(i.alcool ?? i.álcool) ?? 0);
+    const unidade = texto(i.unidade) === "ml" ? "ml" : "g";
+    const kcal = ajustaKcal(numero(i.kcal ?? i.calorias), prot, carb, gord, alcool, unidade);
 
     // Linha sem nenhum número útil não vira registro.
     if (kcal <= 0 && prot === 0 && carb === 0 && gord === 0) continue;
@@ -207,11 +226,12 @@ function normItens(cru: unknown): unknown[] {
     itens.push({
       nome,
       quantidade,
-      unidade: texto(i.unidade) === "ml" ? "ml" : "g",
+      unidade,
       kcal,
       prot: Number(prot.toFixed(2)),
       carb: Number(carb.toFixed(2)),
       gord: Number(gord.toFixed(2)),
+      alcool: Number(alcool.toFixed(2)),
       fonte: f === "taco" || f === "rotulo" || f === "web" ? f : "estimativa",
       fonte_detalhe: detalhe.length ? detalhe : null,
     });

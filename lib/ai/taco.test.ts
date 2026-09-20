@@ -186,3 +186,62 @@ describe("listaParaPrompt", () => {
     expect(listaParaPrompt([])).toBe("");
   });
 });
+
+describe("álcool", () => {
+  const vazia = indexarTaco([]);
+
+  const bebida = (nome: string, kcal: number, prot: number, carb: number, alcool?: number) =>
+    conciliarComTaco(
+      [
+        {
+          nome,
+          quantidade: 100,
+          unidade: "ml" as const,
+          kcal,
+          prot,
+          carb,
+          gord: 0,
+          ...(alcool === undefined ? {} : { alcool }),
+          fonte: "web" as const,
+          fonte_detalhe: "site do fabricante",
+        },
+      ],
+      vazia,
+    )[0];
+
+  it("conta os 7 kcal/g do álcool declarado", () => {
+    // 100 ml de cerveja: 0,5 P + 3,6 C + 3,9 g de álcool = 2 + 14,4 + 27,3.
+    expect(bebida("Cerveja", 42, 0.5, 3.6, 3.9).kcal).toBe(44);
+  });
+
+  it("não zera a bebida quando a IA esquece de declarar o álcool", () => {
+    // Sem o álcool, 4P+4C daria 16 kcal — era isto que o app gravava.
+    expect(bebida("Cerveja", 42, 0.5, 3.6).kcal).toBe(42);
+    expect(bebida("Vinho tinto", 123, 0.1, 3.9).kcal).toBe(123);
+    expect(bebida("Caipirinha", 320, 0, 30).kcal).toBe(320);
+  });
+
+  it("continua barrando caloria inflada em comida sólida", () => {
+    const [solido] = conciliarComTaco(
+      [
+        {
+          nome: "Alface",
+          quantidade: 100,
+          unidade: "g",
+          kcal: 900,
+          prot: 1,
+          carb: 2,
+          gord: 0,
+          fonte: "estimativa",
+          fonte_detalhe: null,
+        },
+      ],
+      vazia,
+    );
+    expect(solido.kcal).toBe(12);
+  });
+
+  it("continua barrando caloria baixa demais para os próprios macros", () => {
+    expect(bebida("Suco de laranja", 5, 0.7, 10.4).kcal).toBe(44);
+  });
+});

@@ -79,6 +79,8 @@ export type ItemBruto = {
   prot: number;
   carb: number;
   gord: number;
+  /** Gramas de álcool puro na porção. Só bebida alcoólica traz isto. */
+  alcool?: number;
   fonte?: FonteItem;
   fonte_detalhe?: string | null;
 };
@@ -126,11 +128,20 @@ export function conciliarComTaco(
     const temDetalhe = Boolean(item.fonte_detalhe?.trim());
     const fonte: FonteItem =
       (declarada === "rotulo" || declarada === "web") && temDetalhe ? declarada : "estimativa";
-    const derivada = kcalDeMacros(item.prot, item.carb, item.gord);
+    const derivada = kcalDeMacros(item.prot, item.carb, item.gord, item.alcool ?? 0);
 
-    // Álcool tem caloria e nenhum macro: derivar de 4P+4C+9G zeraria a bebida.
-    // Sem macro nenhum, o número da IA é o único que existe.
-    const kcal = derivada > 0 ? Math.round(derivada) : Math.round(item.kcal);
+    // Álcool tem 7 kcal/g e não é nenhum dos três macros. Enquanto a conta era
+    // só 4P+4C+9G, uma cerveja de 42 kcal virava 16 e um vinho de 123 virava
+    // 16: o app jogava fora o número certo que a IA tinha trazido.
+    //
+    // Agora a sobra de caloria num líquido é tratada como álcool não declarado
+    // em vez de erro — subestimar bebida é o engano que estraga o déficit.
+    const kcal =
+      derivada <= 0
+        ? Math.round(item.kcal)
+        : item.unidade === "ml" && item.kcal > derivada
+          ? Math.round(item.kcal)
+          : Math.round(derivada);
 
     return {
       ...item,
