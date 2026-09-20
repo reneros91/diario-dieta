@@ -202,6 +202,7 @@ export async function POST(request: Request) {
 
   /* 5. Persistência --------------------------------------------------- */
   const cards: Card[] = [];
+  const problemas: string[] = [];
 
   for (const acao of acoes) {
     const card = await aplicar(acao, {
@@ -209,8 +210,14 @@ export async function POST(request: Request) {
       userId: user.id,
       dia,
       hora: horaAgora(),
+      problemas,
     });
     if (card) cards.push(card);
+  }
+
+  // A IA entendeu e não veio nenhuma ação: registrar nada calado seria pior.
+  if (acoes.length === 0 && texto.length > 0) {
+    problemas.push("A IA respondeu mas não devolveu nada para registrar.");
   }
 
   await sb.from("messages").insert([
@@ -235,7 +242,12 @@ export async function POST(request: Request) {
     resposta: { resposta },
   });
 
-  return NextResponse.json({ resposta, cards, restantes: perfilRow.ai_diario_limite - usadas - 1 });
+  return NextResponse.json({
+    resposta,
+    cards,
+    problemas,
+    restantes: perfilRow.ai_diario_limite - usadas - 1,
+  });
 }
 
 type Ctx = {
@@ -243,15 +255,17 @@ type Ctx = {
   userId: string;
   dia: string;
   hora: string;
+  /** Falhas de gravação, para a conversa contar em vez de engolir. */
+  problemas: string[];
 };
 
 /** Grava uma ação e devolve o cartão que a conversa vai mostrar. */
 async function aplicar(acao: Acao, ctx: Ctx): Promise<Card | null> {
-  const { sb, userId, dia, hora } = ctx;
+  const { sb, userId, dia, hora, problemas } = ctx;
 
   switch (acao.tipo) {
     case "refeicao": {
-      const { data: meal } = await sb
+      const { data: meal, error: erroMeal } = await sb
         .from("meals")
         .insert({
           user_id: userId,
@@ -263,7 +277,11 @@ async function aplicar(acao: Acao, ctx: Ctx): Promise<Card | null> {
         })
         .select("*")
         .single();
-      if (!meal) return null;
+
+      if (erroMeal || !meal) {
+        problemas.push(`Não gravei "${acao.nome}": ${erroMeal?.message ?? "banco não devolveu a refeição"}`);
+        return null;
+      }
 
       const itens = acao.itens.map((it, i) => {
         const p = por100(it.quantidade, {
@@ -282,9 +300,17 @@ async function aplicar(acao: Acao, ctx: Ctx): Promise<Card | null> {
         };
       });
 
-      const { data: gravados } = await sb.from("meal_items").insert(itens).select("*");
-      if (!gravados?.length) {
+      const { data: gravados, error: erroItens } = await sb
+        .from("meal_items")
+        .insert(itens)
+        .select("*");
+
+      if (erroItens || !gravados?.length) {
+        // Refeição sem linha nenhuma não é registro: desfaz.
         await sb.from("meals").delete().eq("id", meal.id);
+        problemas.push(
+          `Não gravei os itens de "${acao.nome}": ${erroItens?.message ?? "banco não devolveu as linhas"}`,
+        );
         return null;
       }
 
@@ -292,7 +318,7 @@ async function aplicar(acao: Acao, ctx: Ctx): Promise<Card | null> {
     }
 
     case "treino": {
-      await sb.from("workouts").insert({
+      const { error } = await sb.from("workouts").insert({
         user_id: userId,
         dia,
         nome: acao.nome,
@@ -300,11 +326,15 @@ async function aplicar(acao: Acao, ctx: Ctx): Promise<Card | null> {
         kcal_estimadas: acao.kcal === null ? null : Math.round(acao.kcal),
         fonte: "manual",
       });
+      if (error) {
+        problemas.push(`Não gravei o treino "${acao.nome}": ${error.message}`);
+        return null;
+      }
       return { tipo: "treino", nome: acao.nome, min: acao.min, kcal: acao.kcal };
     }
 
     case "peso": {
-      await sb.from("weighins").upsert(
+      const { error } = await sb.from("weighins").upsert(
         {
           user_id: userId,
           dia,
@@ -318,6 +348,10 @@ async function aplicar(acao: Acao, ctx: Ctx): Promise<Card | null> {
         },
         { onConflict: "user_id,dia" },
       );
+      if (error) {
+        problemas.push(`Não gravei a pesagem: ${error.message}`);
+        return null;
+      }
 
       await sb
         .from("profiles")
@@ -336,7 +370,7 @@ async function aplicar(acao: Acao, ctx: Ctx): Promise<Card | null> {
     }
 
     case "dia": {
-      await sb.from("day_notes").upsert(
+      const { error } = await sb.from("day_notes").upsert(
         {
           user_id: userId,
           dia,
@@ -346,6 +380,10 @@ async function aplicar(acao: Acao, ctx: Ctx): Promise<Card | null> {
         },
         { onConflict: "user_id,dia" },
       );
+      if (error) {
+        problemas.push(`Não gravei a nota do dia: ${error.message}`);
+        return null;
+      }
       return {
         tipo: "dia",
         passos: acao.passos,
@@ -361,13 +399,17 @@ async function aplicar(acao: Acao, ctx: Ctx): Promise<Card | null> {
         carb: acao.carb,
         gord: acao.gord,
       });
-      await sb.from("foods").insert({
+      const { error } = await sb.from("foods").insert({
         user_id: userId,
         nome: acao.nome,
         unidade: acao.unidade,
         porcao_rotulo: acao.porcao,
         ...p,
       });
+      if (error) {
+        problemas.push(`Não gravei o alimento "${acao.nome}": ${error.message}`);
+        return null;
+      }
       return { tipo: "alimento", nome: acao.nome, porcao: acao.porcao, kcal: acao.kcal };
     }
   }

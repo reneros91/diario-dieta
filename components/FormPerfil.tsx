@@ -73,6 +73,24 @@ export function FormPerfil({ perfil }: { perfil: ProfileRow }) {
   const a = useMemo(() => alvos(calc), [calc]);
   const sugerido = Math.round(deficitSugerido(n(f.kg_sem)));
 
+  // O que está na tela vs. o que o app está usando no anel do topo.
+  const alterado = useMemo(
+    () =>
+      n(f.peso_kg) !== Number(perfil.peso_kg) ||
+      n(f.altura_cm) !== Number(perfil.altura_cm) ||
+      Math.round(n(f.idade)) !== perfil.idade ||
+      f.sexo !== perfil.sexo ||
+      f.fator !== Number(perfil.fator) ||
+      n(f.kg_sem) !== Number(perfil.kg_sem) ||
+      nOuNull(f.gordura_pct) !== (perfil.gordura_pct === null ? null : Number(perfil.gordura_pct)) ||
+      nOuNull(f.deficit_kcal) !== perfil.deficit_kcal ||
+      nOuNull(f.meta_manual) !== perfil.meta_manual ||
+      n(f.prot_gkg) !== Number(perfil.prot_gkg) ||
+      Math.round(n(f.gord_pct)) !== perfil.gord_pct ||
+      (f.nome.trim() || null) !== perfil.nome,
+    [f, perfil],
+  );
+
   function salvar() {
     startTransition(async () => {
       const r = await salvarPerfil({
@@ -205,8 +223,27 @@ export function FormPerfil({ perfil }: { perfil: ProfileRow }) {
         </div>
       </section>
 
-      <section className="rounded-card bg-card border border-line shadow-card p-4">
-        <h2 className="text-sm font-semibold">O que sai disso</h2>
+      <section
+        className="rounded-card bg-card border shadow-card p-4"
+        style={{ borderColor: alterado ? "var(--accent)" : "var(--line)" }}
+      >
+        <div className="flex items-baseline justify-between gap-2">
+          <h2 className="text-sm font-semibold">O que sai disso</h2>
+          {alterado && (
+            <span
+              className="text-[11px] font-medium"
+              style={{ color: "var(--accent)" }}
+            >
+              prévia — ainda não salvo
+            </span>
+          )}
+        </div>
+
+        {alterado && (
+          <p className="mt-1 text-[11px] text-muted">
+            Estes números já usam o que você digitou. O anel do topo só muda depois de salvar.
+          </p>
+        )}
 
         <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2.5 text-sm num">
           <div>
@@ -249,6 +286,17 @@ export function FormPerfil({ perfil }: { perfil: ProfileRow }) {
           </div>
         </dl>
 
+        {nOuNull(f.meta_manual) !== null && (
+          <p
+            className="mt-3 rounded-btn px-3 py-2 text-sm"
+            style={{ background: "var(--accent-soft)", color: "var(--accent)" }}
+          >
+            A meta fixa de {kcal(n(f.meta_manual))} kcal manda em tudo: enquanto ela estiver
+            preenchida, mudar peso, gordura ou déficit não altera a meta. Apague o campo para a
+            meta voltar a sair da conta.
+          </p>
+        )}
+
         {a.noPisoTmb && (
           <p
             className="mt-3 rounded-btn border px-3 py-2 text-sm"
@@ -266,14 +314,25 @@ export function FormPerfil({ perfil }: { perfil: ProfileRow }) {
         </p>
       )}
 
-      <button
-        type="button"
-        onClick={salvar}
-        disabled={salvando}
-        className="w-full rounded-btn btn-acento px-4 py-3 font-semibold"
+      <div
+        className="sticky bottom-20 z-10"
+        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
-        {salvando ? "Salvando…" : salvo ? "Salvo" : "Salvar perfil"}
-      </button>
+        <button
+          type="button"
+          onClick={salvar}
+          disabled={salvando || (!alterado && !salvo)}
+          className="w-full rounded-btn btn-acento px-4 py-3 font-semibold shadow-card"
+        >
+          {salvando
+            ? "Salvando…"
+            : salvo
+              ? "Salvo"
+              : alterado
+                ? "Salvar perfil"
+                : "Nada para salvar"}
+        </button>
+      </div>
     </div>
   );
 }

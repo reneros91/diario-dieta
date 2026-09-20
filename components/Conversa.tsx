@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CartaoRefeicao } from "@/components/CartaoRefeicao";
 import { Hub } from "@/components/Hub";
@@ -42,6 +43,7 @@ export function Conversa({ historico }: { historico: MessageRow[] }) {
   const [fotos, setFotos] = useState<string[]>([]);
   const [analisando, setAnalisando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+  const [problemas, setProblemas] = useState<string[]>([]);
   const [hubAberto, setHubAberto] = useState(false);
 
   const fim = useRef<HTMLDivElement>(null);
@@ -71,6 +73,7 @@ export function Conversa({ historico }: { historico: MessageRow[] }) {
     if (!conteudo && fotos.length === 0) return;
 
     setErro(null);
+    setProblemas([]);
     setAnalisando(true);
     setMensagens((m) => [
       ...m,
@@ -109,6 +112,9 @@ export function Conversa({ historico }: { historico: MessageRow[] }) {
           cards: dados.cards ?? [],
         },
       ]);
+      // Gravação que falhou não pode sumir: a resposta da IA parece certa e o
+      // registro não existe.
+      setProblemas(dados.problemas ?? []);
       router.refresh();
     } catch {
       setErro("Sem conexão com o servidor.");
@@ -181,6 +187,24 @@ export function Conversa({ historico }: { historico: MessageRow[] }) {
         >
           {erro}
         </p>
+      )}
+
+      {problemas.length > 0 && (
+        <div
+          role="alert"
+          className="rounded-card border px-3 py-2.5 text-sm"
+          style={{ borderColor: "var(--over)", color: "var(--over)" }}
+        >
+          <p className="font-semibold">Não entrou no diário</p>
+          <ul className="mt-1 space-y-0.5 text-[12px]">
+            {problemas.map((p, i) => (
+              <li key={i}>{p}</li>
+            ))}
+          </ul>
+          <Link href="/diagnostico" className="mt-2 inline-block text-[12px] underline">
+            Abrir diagnóstico
+          </Link>
+        </div>
       )}
 
       <div ref={fim} />

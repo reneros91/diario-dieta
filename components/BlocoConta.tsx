@@ -107,6 +107,13 @@ export function BlocoConta({
           </a>
         </div>
 
+        <a
+          href="/diagnostico"
+          className="mt-2 block w-full rounded-btn border border-line px-3 py-2 text-center text-sm"
+        >
+          Diagnóstico
+        </a>
+
         <button
           type="button"
           onClick={sair}
