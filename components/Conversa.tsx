@@ -148,7 +148,7 @@ export function Conversa({ historico }: { historico: MessageRow[] }) {
             <div
               className={
                 m.role === "user"
-                  ? "ml-auto max-w-[85%] rounded-card rounded-br-md bg-accent px-3.5 py-2.5 text-white text-sm"
+                  ? "ml-auto max-w-[85%] rounded-card rounded-br-md btn-acento px-3.5 py-2.5 text-sm"
                   : "mr-auto max-w-[90%] rounded-card rounded-bl-md bg-card border border-line px-3.5 py-2.5 text-sm shadow-card"
               }
             >
@@ -270,7 +270,7 @@ export function Conversa({ historico }: { historico: MessageRow[] }) {
               onClick={() => void enviar()}
               disabled={analisando || (!texto.trim() && fotos.length === 0)}
               aria-label="Enviar"
-              className="h-10 w-10 shrink-0 rounded-full bg-accent text-white disabled:opacity-40"
+              className="h-10 w-10 shrink-0 rounded-full btn-acento disabled:opacity-40"
             >
               <svg
                 viewBox="0 0 24 24"

@@ -156,7 +156,7 @@ export function NovaReceita({ onVoltar, onSalva }: { onVoltar: () => void; onSal
           type="button"
           onClick={calcular}
           disabled={calculando}
-          className="w-full rounded-btn bg-accent px-4 py-3 font-semibold text-white disabled:opacity-60"
+          className="w-full rounded-btn btn-acento px-4 py-3 font-semibold"
         >
           {calculando ? "Calculando…" : "Calcular com a IA"}
         </button>
@@ -238,7 +238,7 @@ export function NovaReceita({ onVoltar, onSalva }: { onVoltar: () => void; onSal
               type="button"
               onClick={salvar}
               disabled={salvando}
-              className="flex-1 rounded-btn bg-accent px-4 py-3 font-semibold text-white disabled:opacity-60"
+              className="flex-1 rounded-btn btn-acento px-4 py-3 font-semibold"
             >
               {salvando ? "Salvando…" : "Salvar receita"}
             </button>

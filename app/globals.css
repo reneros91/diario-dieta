@@ -2,34 +2,39 @@
 
 /* Tokens do SPEC §8. Claro por padrão, escuro por prefers-color-scheme. */
 :root {
-  --bg: #f3f5f1;
+  --bg: #f2f5fa;
   --card: #ffffff;
-  --ink: #172420;
-  --muted: #6b7a74;
-  --line: #e2e7e0;
-  --accent: #1f7a63;
-  --accent-soft: #e4efea;
+  --ink: #14233d;
+  --muted: #667894;
+  --line: #e2e8f2;
+  --accent: #1048b0;
+  --accent-soft: #e6edfb;
+  /* Texto sobre o acento preenchido. */
+  --on-accent: #ffffff;
   --over: #c8473b;
-  --prot: #1f7a63;
-  --carb: #d6902b;
+  --prot: #1048b0;
+  --carb: #d9822b;
   --gord: #7a5ac7;
-  --track: #e6eae4;
+  --track: #e4eaf3;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #111614;
-    --card: #1a211d;
-    --ink: #e7ede9;
-    --muted: #8d9c96;
-    --line: #26302a;
-    --accent: #5cc4a6;
-    --accent-soft: #1d2b26;
+    --bg: #0f1521;
+    --card: #182134;
+    --ink: #e7edf7;
+    --muted: #93a3bc;
+    --line: #26314a;
+    --accent: #6fa8ff;
+    --accent-soft: #1b2842;
+    /* Azul claro pede texto escuro: branco sobre ele não se lê. */
+    --on-accent: #0f1521;
     --over: #e4695c;
-    --prot: #5cc4a6;
-    --carb: #e0a84b;
-    --gord: #9b84d9;
-    --track: #232b27;
+    /* Trio dos macros validado contra daltonismo no fundo escuro. */
+    --prot: #4589e8;
+    --carb: #c8813c;
+    --gord: #8468c6;
+    --track: #222d45;
   }
 }
 
@@ -41,6 +46,7 @@
   --color-line: var(--line);
   --color-accent: var(--accent);
   --color-accent-soft: var(--accent-soft);
+  --color-on-accent: var(--on-accent);
   --color-over: var(--over);
   --color-prot: var(--prot);
   --color-carb: var(--carb);
@@ -91,6 +97,17 @@ select,
 textarea {
   font: inherit;
   color: inherit;
+}
+
+/* Botão de ação principal. O texto vem do tema porque no escuro o acento
+   é claro e branco sobre ele não se lê. */
+.btn-acento {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.btn-acento:disabled {
+  opacity: 0.6;
 }
 
 /* Alvo de toque confortável para uso com uma mão. */

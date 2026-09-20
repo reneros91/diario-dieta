@@ -105,7 +105,7 @@ export default function CadastroPage() {
           <button
             type="submit"
             disabled={ocupado}
-            className="w-full rounded-btn bg-accent px-4 py-3 font-semibold text-white disabled:opacity-60"
+            className="w-full rounded-btn btn-acento px-4 py-3 font-semibold"
           >
             {ocupado ? "Criando…" : "Criar conta e entrar"}
           </button>

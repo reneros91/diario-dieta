@@ -118,7 +118,7 @@ export function FormPesagem({ hoje, ultima }: { hoje: string; ultima: WeighinRow
         type="button"
         onClick={salvar}
         disabled={salvando}
-        className="mt-3 w-full rounded-btn bg-accent px-4 py-2.5 font-semibold text-white disabled:opacity-60"
+        className="mt-3 w-full rounded-btn btn-acento px-4 py-2.5 font-semibold"
       >
         {salvando ? "Salvando…" : salvo ? "Salvo" : "Salvar pesagem"}
       </button>

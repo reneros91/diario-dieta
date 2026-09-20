@@ -365,7 +365,7 @@ function Receitas({
               onPronto();
             })
           }
-          className="w-full rounded-btn bg-accent px-4 py-3 font-semibold text-white disabled:opacity-60"
+          className="w-full rounded-btn btn-acento px-4 py-3 font-semibold"
         >
           {salvando ? "Adicionando…" : "Adicionar"}
         </button>
@@ -676,7 +676,7 @@ function NovoAlimento({ onVoltar, onSalvo }: { onVoltar: () => void; onSalvo: ()
         type="button"
         onClick={salvar}
         disabled={salvando}
-        className="w-full rounded-btn bg-accent px-4 py-3 font-semibold text-white disabled:opacity-60"
+        className="w-full rounded-btn btn-acento px-4 py-3 font-semibold"
       >
         {salvando ? "Salvando…" : "Salvar alimento"}
       </button>

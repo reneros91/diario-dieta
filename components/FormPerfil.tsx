@@ -270,7 +270,7 @@ export function FormPerfil({ perfil }: { perfil: ProfileRow }) {
         type="button"
         onClick={salvar}
         disabled={salvando}
-        className="w-full rounded-btn bg-accent px-4 py-3 font-semibold text-white disabled:opacity-60"
+        className="w-full rounded-btn btn-acento px-4 py-3 font-semibold"
       >
         {salvando ? "Salvando…" : salvo ? "Salvo" : "Salvar perfil"}
       </button>

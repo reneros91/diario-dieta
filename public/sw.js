@@ -5,7 +5,7 @@
  * no cache quando não há sinal; estáticos usam cache primeiro. Nada de POST,
  * nada de API de IA — registrar comida offline daria número errado.
  */
-const VERSAO = "nutridia-v2";
+const VERSAO = "nutridia-v3";
 const OFFLINE = "/offline";
 
 self.addEventListener("install", (event) => {

@@ -242,7 +242,21 @@ troca entre elas por `prefers-color-scheme`.
 Os ícones têm fundo branco sólido de propósito — o iOS não respeita transparência e preencheria
 com preto.
 
-> **Pendente:** a paleta do app (acento verde `#1F7A63`, definida na SPEC §8) é anterior a esta
-> marca e não conversa com o azul e o laranja do logo — o botão da tela de login é verde embaixo
-> de um logo azul. Trocar os tokens de `app/globals.css` para o azul `#1048B0` e o laranja
-> `#F09C60` resolve, mas muda o app inteiro, então está esperando decisão.
+### Paleta
+
+Os tokens de `app/globals.css` seguem a marca, e não mais o verde da SPEC §8 — o acento é o azul
+`#1048B0` amostrado do próprio logo.
+
+| Papel | Claro | Escuro |
+| --- | --- | --- |
+| fundo / cartão | `#F2F5FA` / `#FFFFFF` | `#0F1521` / `#182134` |
+| acento (botões, anel) | `#1048B0` | `#6FA8FF` |
+| proteína · carbo · gordura | `#1048B0` · `#D9822B` · `#7A5AC7` | `#4589E8` · `#C8813C` · `#8468C6` |
+| acima da meta | `#C8473B` | `#E4695C` |
+
+Os dois trios de macro passam no teste de separação para daltonismo (protanopia e tritanopia) e
+no contraste contra o fundo de cada tema. O trio escuro é um pouco menos saturado que o acento de
+propósito: cor de gráfico e cor de botão têm exigências diferentes.
+
+`--on-accent` existe porque no modo escuro o acento é claro — texto branco sobre ele não se lê.
+Todo botão de ação usa a classe `.btn-acento`, que puxa fundo e texto do tema junto.
