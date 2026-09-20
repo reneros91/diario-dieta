@@ -24,6 +24,9 @@ nenhum commit. Tudo que dependia dele foi reconstruído a partir da própria esp
 Se o `balanco.html` aparecer, vale comparar os valores da TACO e o texto do prompt — o resto da
 mecânica está coberta por teste.
 
+> **Não é programador?** Vá direto para o [`COMECE-AQUI.md`](./COMECE-AQUI.md): é o mesmo caminho,
+> explicado clique a clique, sem jargão.
+
 ## Rodar
 
 ```bash
@@ -40,6 +43,9 @@ npm run dev
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run lint` | ESLint |
 | `npm run taco:import -- taco.csv` | importa uma TACO completa por cima do seed |
+
+Sem as chaves do Supabase o app não quebra: ele sobe e mostra a tela `/configurar`, dizendo o que
+falta. Assim que as variáveis entram, essa tela some sozinha e o app abre no login.
 
 ### Variáveis de ambiente
 

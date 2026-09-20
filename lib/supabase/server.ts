@@ -8,25 +8,25 @@ import type { Database } from "@/lib/types/db";
  */
 export async function supabaseServer() {
   const cookieStore = await cookies();
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const chave = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  return createServerClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll: () => cookieStore.getAll(),
-        setAll: (cookiesToSet) => {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options),
-            );
-          } catch {
-            // Server Component não pode escrever cookie; o middleware renova a sessão.
-          }
-        },
+  if (!url || !chave) {
+    throw new Error("Supabase não configurado: veja /configurar ou o COMECE-AQUI.md");
+  }
+
+  return createServerClient<Database>(url, chave, {
+    cookies: {
+      getAll: () => cookieStore.getAll(),
+      setAll: (cookiesToSet) => {
+        try {
+          cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options));
+        } catch {
+          // Server Component não pode escrever cookie; o middleware renova a sessão.
+        }
       },
     },
-  );
+  });
 }
 
 /** Usuário da sessão, ou null. */
