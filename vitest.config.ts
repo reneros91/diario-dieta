@@ -7,6 +7,8 @@ export default defineConfig({
   },
   test: {
     include: ["lib/**/*.test.ts"],
+    // O teste do service worker lê public/sw.js a partir da raiz.
+    root: process.cwd(),
     environment: "node",
   },
 });

@@ -256,6 +256,18 @@ Testado automaticamente: fórmulas (`lib/calc.test.ts`) e normalização das res
 Supabase e da API da Anthropic ativos — RLS entre duas contas reais, foto de rótulo, limite diário
 estourando — precisa de verificação manual com as chaves no lugar.
 
+## Service worker
+
+Só entra em cache o que é imutável por natureza: `/_next/static` (tem hash no nome),
+ícones e o manifest. **Dado do app nunca sai do cache** — HTML de navegação vai na rede
+primeiro, e a troca de aba do Next (requisição com `_rsc` ou cabeçalho `RSC`) passa direto,
+sem nem tocar no cache.
+
+> A primeira versão guardava tudo que não fosse navegação. Como a troca de aba do Next busca
+> os dados por uma requisição comum, o diário vinha do cache para sempre: comida apagada
+> reaparecia ao voltar na aba e o anel do topo não zerava. As duas regras de roteamento têm
+> teste em `lib/pwa/sw.test.ts`, que lê o `public/sw.js` e avalia as funções.
+
 ## Marca
 
 O logo e o ícone vêm de uma única arte, processada em `public/`:

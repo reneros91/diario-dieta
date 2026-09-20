@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useOptimistic, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   apagarRefeicao,
@@ -19,14 +19,26 @@ import type { MealComItens, MealItemRow, TipoRefeicao } from "@/lib/types/db";
  * Editar a quantidade de uma linha recalcula tudo localmente e grava o número —
  * nunca chama a IA.
  */
+type Ajuste = { tipo: "qtd"; id: string; qtd: number } | { tipo: "remover"; id: string };
+
 export function CartaoRefeicao({ refeicao }: { refeicao: MealComItens }) {
   const router = useRouter();
   const [, startTransition] = useTransition();
-  const [itens, setItens] = useState<MealItemRow[]>(refeicao.meal_items);
-  const [tipo, setTipo] = useState<TipoRefeicao>(refeicao.tipo);
+
+  // As linhas vêm do servidor, não de estado local. O que a pessoa acabou de
+  // fazer aparece na hora como otimismo e, quando a transição termina, o que
+  // vale é o que o banco devolveu — inclusive se a gravação falhou.
+  const [itens, ajustar] = useOptimistic(refeicao.meal_items, (atuais, a: Ajuste) =>
+    a.tipo === "remover"
+      ? atuais.filter((i) => i.id !== a.id)
+      : atuais.map((i) => (i.id === a.id ? { ...i, qtd: a.qtd } : i)),
+  );
+  const [tipo, definirTipo] = useOptimistic(refeicao.tipo, (_atual, novo: TipoRefeicao) => novo);
+  const [apagado, marcarApagado] = useOptimistic(false, () => true);
+
   const [menuAberto, setMenuAberto] = useState(false);
   const [favoritado, setFavoritado] = useState(false);
-  const [apagado, setApagado] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
 
   if (apagado || itens.length === 0) return null;
 
@@ -42,18 +54,29 @@ export function CartaoRefeicao({ refeicao }: { refeicao: MealComItens }) {
 
   function mudarQtd(item: MealItemRow, qtd: number) {
     if (!Number.isFinite(qtd) || qtd <= 0) return;
-    setItens((atuais) => atuais.map((i) => (i.id === item.id ? { ...i, qtd } : i)));
     startTransition(async () => {
-      await atualizarQtdItem(item.id, qtd);
+      ajustar({ tipo: "qtd", id: item.id, qtd });
+      setErro(null);
+      const r = await atualizarQtdItem(item.id, qtd);
+      if (!r.ok) {
+        // Sem refresh: o otimismo volta atrás sozinho e a linha reaparece
+        // com o valor antigo, que é a verdade.
+        setErro(r.erro);
+        return;
+      }
       router.refresh();
     });
   }
 
   function excluirLinha(item: MealItemRow) {
-    const restantes = itens.filter((i) => i.id !== item.id);
-    setItens(restantes);
     startTransition(async () => {
-      await removerItem(item.id);
+      ajustar({ tipo: "remover", id: item.id });
+      setErro(null);
+      const r = await removerItem(item.id);
+      if (!r.ok) {
+        setErro(r.erro);
+        return;
+      }
       router.refresh();
     });
   }
@@ -104,13 +127,17 @@ export function CartaoRefeicao({ refeicao }: { refeicao: MealComItens }) {
                 <button
                   key={t}
                   type="button"
-                  onClick={() => {
-                    setTipo(t);
+                  onClick={() =>
                     startTransition(async () => {
-                      await mudarTipoRefeicao(refeicao.id, t);
+                      definirTipo(t);
+                      const r = await mudarTipoRefeicao(refeicao.id, t);
+                      if (!r.ok) {
+                        setErro(r.erro);
+                        return;
+                      }
                       router.refresh();
-                    });
-                  }}
+                    })
+                  }
                   className="rounded-btn px-2.5 py-1.5 text-xs border"
                   style={{
                     borderColor: t === tipo ? "var(--accent)" : "var(--line)",
@@ -130,7 +157,11 @@ export function CartaoRefeicao({ refeicao }: { refeicao: MealComItens }) {
               onClick={() =>
                 startTransition(async () => {
                   const r = await favoritarRefeicao(refeicao.id);
-                  if (r.ok) setFavoritado(true);
+                  if (!r.ok) {
+                    setErro(r.erro);
+                    return;
+                  }
+                  setFavoritado(true);
                 })
               }
               className="flex-1 rounded-btn border border-line px-3 py-2 text-sm"
@@ -141,8 +172,13 @@ export function CartaoRefeicao({ refeicao }: { refeicao: MealComItens }) {
               type="button"
               onClick={() =>
                 startTransition(async () => {
-                  setApagado(true);
-                  await apagarRefeicao(refeicao.id);
+                  marcarApagado(null);
+                  setErro(null);
+                  const r = await apagarRefeicao(refeicao.id);
+                  if (!r.ok) {
+                    setErro(r.erro);
+                    return;
+                  }
                   router.refresh();
                 })
               }
@@ -155,9 +191,24 @@ export function CartaoRefeicao({ refeicao }: { refeicao: MealComItens }) {
         </div>
       )}
 
+      {erro && (
+        <p
+          role="alert"
+          className="mt-3 rounded-btn border px-3 py-2 text-sm"
+          style={{ borderColor: "var(--over)", color: "var(--over)" }}
+        >
+          {erro}
+        </p>
+      )}
+
       <ul className="mt-3 divide-y divide-line">
         {itens.map((item) => (
-          <LinhaItem key={item.id} item={item} onQtd={mudarQtd} onExcluir={excluirLinha} />
+          <LinhaItem
+            key={`${item.id}:${Number(item.qtd)}`}
+            item={item}
+            onQtd={mudarQtd}
+            onExcluir={excluirLinha}
+          />
         ))}
       </ul>
     </article>
