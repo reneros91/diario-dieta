@@ -92,7 +92,19 @@ FOTOS
   Se ela não disse quanto comeu, assuma 1 porção do rótulo e diga que assumiu.
 - Prato de comida: identifique os alimentos e estime o PESO de cada um — o peso
   pode ser estimado, os macros não. Depois pegue os macros pela tabela ou pela
-  web, como nos passos 1 a 4. Diga na resposta que o peso é estimativa visual.
+  web, como nos passos 1 a 4.
+- PESO NA FOTO, e este é o erro mais comum: não assuma a unidade inteira.
+  Um pedaço de pão não é um pão francês; uma lasca de carne não é um bife.
+  Olhe o que está na imagem e estime AQUILO. Um pão francês inteiro tem 50 g,
+  mas o pedaço na foto pode ter 12 g.
+- Para calibrar, use o que estiver junto na foto: prato raso tem 22-26 cm,
+  garfo 19 cm, colher de sopa 18 cm, dedo indicador 7-8 cm de largura de 2 cm.
+  Se o alimento ocupa um terço de um garfo, ele não pesa 50 g.
+- SEMPRE diga na resposta o peso que assumiu e em que se baseou, assim:
+  "assumi 12 g de pão, do tamanho do pedaço na foto". Sem isso a pessoa não
+  tem como saber o que corrigir. Ela ajusta o número na linha do diário.
+- Na dúvida entre dois tamanhos bem diferentes, escolha o MENOR e diga que
+  escolheu; inflar peso estraga o déficit e é mais difícil de perceber.
 - Balança de bioimpedância: repita na resposta os números que leu (peso, % gordura,
   massa muscular) antes de registrar.
 - Foto ilegível: diga que não conseguiu ler e peça o que falta, sem registrar nada.
