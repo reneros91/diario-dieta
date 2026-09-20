@@ -1,5 +1,6 @@
 import { supabaseServer, usuarioAtual } from "@/lib/supabase/server";
 import { hojeISO, somaDias } from "@/lib/calc";
+import { colunaAusente, semColuna } from "@/lib/supabase/compat";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Diagnóstico — NutriDia" };
@@ -77,19 +78,29 @@ export default async function Diagnostico() {
     .single();
 
   let detalheEscrita = erroEscrita?.message ?? "";
+  let temColunaFonte = true;
+
   if (teste) {
-    const { error: erroItem } = await sb.from("meal_items").insert({
+    const linha = {
       meal_id: teste.id,
       nome: "teste",
       qtd: 100,
-      unidade: "g",
-      fonte: "manual",
+      unidade: "g" as const,
+      fonte: "manual" as const,
       k100: 100,
       p100: 10,
       c100: 10,
       g100: 1,
       ordem: 0,
-    });
+    };
+
+    let { error: erroItem } = await sb.from("meal_items").insert(linha);
+
+    if (colunaAusente(erroItem, "fonte")) {
+      temColunaFonte = false;
+      ({ error: erroItem } = await sb.from("meal_items").insert(semColuna([linha], "fonte")));
+    }
+
     detalheEscrita = erroItem ? `refeição entrou, mas o item falhou: ${erroItem.message}` : "ok";
     await sb.from("meals").delete().eq("id", teste.id);
   }
@@ -98,6 +109,14 @@ export default async function Diagnostico() {
     nome: "Consigo gravar (teste que se apaga sozinho)",
     ok: Boolean(teste) && detalheEscrita === "ok",
     detalhe: detalheEscrita || "não consegui inserir",
+  });
+
+  checagens.push({
+    nome: "Coluna de procedência (migration 0004)",
+    ok: temColunaFonte,
+    detalhe: temColunaFonte
+      ? "presente — cada linha diz se veio da tabela ou de estimativa"
+      : "faltando: rode a migration 0005. Sem ela o app grava, mas sem dizer a origem.",
   });
 
   /* View de totais --------------------------------------------------- */

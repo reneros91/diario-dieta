@@ -42,7 +42,7 @@ npm run dev
 | `npm test` | testes das fórmulas e da normalização |
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run lint` | ESLint |
-| `npm run taco:import -- taco.csv` | importa uma TACO completa por cima do seed |
+| `npm run taco:import -- taco.csv` | importa a TACO oficial por cima do seed |
 
 Sem as chaves do Supabase o app não quebra: ele sobe e mostra a tela `/configurar`, dizendo o que
 falta. Assim que as variáveis entram, essa tela some sozinha e o app abre no login.
@@ -75,6 +75,14 @@ supabase db push        # ou cole supabase/migrations/*.sql no SQL Editor
 
 - `0001_init.sql` — tabelas, RLS, triggers, índices (`pg_trgm` na TACO) e a view `day_totals`.
 - `0002_seed_taco.sql` — alimentos do dia a dia.
+- `0003` e `0004` — permissão da view e coluna `fonte` em `meal_items`.
+- `0005_tudo_junto.sql` — **aplica 0003 + 0004 e amplia a tabela para ~330 alimentos.**
+  É idempotente e cobre as duas anteriores: quem não sabe o que já rodou, roda só esta.
+
+> **Ordem importa entre código e banco.** O deploy na Vercel é automático, a migration é manual —
+> entre um e outro existe uma janela em que o código grava uma coluna que o banco não tem. Por isso
+> `lib/supabase/compat.ts` detecta a coluna ausente e repete a gravação sem ela: perde a
+> procedência da linha, não perde a refeição.
 
 Toda tabela tem RLS ligada com `user_id = auth.uid()`. `meal_items` e `recipe_items` herdam do pai.
 `taco` é leitura para qualquer pessoa autenticada. Receita com `publica = true` aparece para a casa

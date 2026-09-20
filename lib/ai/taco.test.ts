@@ -93,6 +93,14 @@ describe("conciliarComTaco", () => {
     expect(r.kcal).toBe(Math.round(kcalDeMacros(10, 20, 5)));
   });
 
+  it("bebida alcoólica não é zerada por não ter macro", () => {
+    const [r] = conciliarComTaco(
+      [item({ nome: "Caipirinha", quantidade: 200, kcal: 320, prot: 0, carb: 0, gord: 0 })],
+      mapa,
+    );
+    expect(r.kcal).toBe(320);
+  });
+
   it("o total é a soma do que vai ser gravado", () => {
     const conc = conciliarComTaco(
       [

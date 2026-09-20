@@ -228,7 +228,11 @@ export type Database = {
       meals: Tabela<MealRow, Omit<MealRow, "id" | "created_at" | "updated_at"> & { id?: string }>;
       meal_items: Tabela<
         MealItemRow,
-        Omit<MealItemRow, "id" | "created_at"> & { id?: string },
+        // `fonte` tem default no banco e pode faltar num banco sem a 0004.
+        Omit<MealItemRow, "id" | "created_at" | "fonte"> & {
+          id?: string;
+          fonte?: FonteItem;
+        },
         Partial<MealItemRow>,
         [FK<"meal_items_meal_id_fkey", "meal_id", "meals">]
       >;

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { supabaseServer, usuarioAtual } from "@/lib/supabase/server";
 import { hojeISO, horaAgora } from "@/lib/calc";
+import { colunaAusente, semColuna } from "@/lib/supabase/compat";
 import type { FavoritoItem, TipoRefeicao, Unidade } from "@/lib/types/db";
 
 /* ------------------------------------------------------------------ */
@@ -90,20 +91,25 @@ export async function criarRefeicao(entrada: unknown): Promise<Resultado<{ id: s
 
   if (error || !meal) return falha("Não deu para salvar a refeição.");
 
-  const { error: erroItens } = await sb.from("meal_items").insert(
-    itens.map((it, i) => ({
-      meal_id: meal.id,
-      nome: it.nome,
-      qtd: it.qtd,
-      unidade: it.unidade,
-      fonte: it.fonte ?? fontePadrao,
-      k100: it.k100,
-      p100: it.p100,
-      c100: it.c100,
-      g100: it.g100,
-      ordem: i,
-    })),
-  );
+  const linhas = itens.map((it, i) => ({
+    meal_id: meal.id,
+    nome: it.nome,
+    qtd: it.qtd,
+    unidade: it.unidade,
+    fonte: it.fonte ?? fontePadrao,
+    k100: it.k100,
+    p100: it.p100,
+    c100: it.c100,
+    g100: it.g100,
+    ordem: i,
+  }));
+
+  let { error: erroItens } = await sb.from("meal_items").insert(linhas);
+
+  // Banco ainda sem a migration 0004: grava sem a procedência.
+  if (colunaAusente(erroItens, "fonte")) {
+    ({ error: erroItens } = await sb.from("meal_items").insert(semColuna(linhas, "fonte")));
+  }
 
   if (erroItens) {
     // Sem itens o cartão não existe: desfaz para não deixar refeição vazia.

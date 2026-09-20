@@ -119,11 +119,17 @@ export function conciliarComTaco(
     }
 
     const fonte: FonteItem = item.fonte === "rotulo" ? "rotulo" : "estimativa";
+    const derivada = kcalDeMacros(item.prot, item.carb, item.gord);
+
+    // Álcool tem caloria e nenhum macro: derivar de 4P+4C+9G zeraria a bebida.
+    // Sem macro nenhum, o número da IA é o único que existe.
+    const kcal = derivada > 0 ? Math.round(derivada) : Math.round(item.kcal);
+
     return {
       ...item,
       nomeTabela: null,
       fonte,
-      kcal: Math.round(kcalDeMacros(item.prot, item.carb, item.gord)),
+      kcal,
       prot: arred2(item.prot),
       carb: arred2(item.carb),
       gord: arred2(item.gord),

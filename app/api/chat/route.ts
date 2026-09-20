@@ -25,6 +25,7 @@ import {
 } from "@/lib/ai/taco";
 import { alvos, hojeISO, horaAgora, por100, tendencia } from "@/lib/calc";
 import { perfilParaCalc } from "@/lib/data";
+import { colunaAusente, semColuna } from "@/lib/supabase/compat";
 import { TIPO_LABEL } from "@/lib/format";
 import type { MealComItens } from "@/lib/types/db";
 
@@ -348,10 +349,18 @@ async function aplicar(acao: Acao, ctx: Ctx): Promise<Card | null> {
         };
       });
 
-      const { data: gravados, error: erroItens } = await sb
+      let { data: gravados, error: erroItens } = await sb
         .from("meal_items")
         .insert(itens)
         .select("*");
+
+      // Banco ainda sem a migration 0004: grava sem a procedência.
+      if (colunaAusente(erroItens, "fonte")) {
+        ({ data: gravados, error: erroItens } = await sb
+          .from("meal_items")
+          .insert(semColuna(itens, "fonte"))
+          .select("*"));
+      }
 
       if (erroItens || !gravados?.length) {
         // Refeição sem linha nenhuma não é registro: desfaz.
