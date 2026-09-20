@@ -107,7 +107,7 @@ export function Conversa({ historico }: { historico: MessageRow[] }) {
         {
           id: `ia-${Date.now()}`,
           role: "assistant",
-          texto: dados.resposta,
+          texto: [dados.resposta, dados.resumo].filter(Boolean).join(" "),
           fotos: 0,
           cards: dados.cards ?? [],
         },

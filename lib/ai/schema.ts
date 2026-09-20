@@ -12,6 +12,8 @@ export const zItemIA = z.object({
   prot: z.number().min(0).max(5000),
   carb: z.number().min(0).max(5000),
   gord: z.number().min(0).max(5000),
+  /** Declarada pela IA; o app confere contra a tabela e corrige. */
+  fonte: z.enum(["taco", "rotulo", "estimativa"]).default("estimativa"),
 });
 
 export const zAcao = z.discriminatedUnion("tipo", [
@@ -99,7 +101,7 @@ export const TOOL_REGISTRAR = {
               description: "Ingredientes da refeição. Só para tipo=refeicao.",
               items: {
                 type: "object",
-                required: ["nome", "quantidade", "unidade", "kcal", "prot", "carb", "gord"],
+                required: ["nome", "quantidade", "unidade", "kcal", "prot", "carb", "gord", "fonte"],
                 additionalProperties: false,
                 properties: {
                   nome: { type: "string" },
@@ -109,6 +111,12 @@ export const TOOL_REGISTRAR = {
                   prot: { type: "number", description: "Proteína em g nesta quantidade." },
                   carb: { type: "number", description: "Carboidrato em g nesta quantidade." },
                   gord: { type: "number", description: "Gordura em g nesta quantidade." },
+                  fonte: {
+                    type: "string",
+                    enum: ["taco", "rotulo", "estimativa"],
+                    description:
+                      "taco quando copiou da lista ALIMENTOS DA TABELA, rotulo quando leu de um rótulo, estimativa quando calculou de cabeça.",
+                  },
                 },
               },
             },

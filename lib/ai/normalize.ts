@@ -202,6 +202,7 @@ function normItens(cru: unknown): unknown[] {
     // Linha sem nenhum número útil não vira registro.
     if (kcal <= 0 && prot === 0 && carb === 0 && gord === 0) continue;
 
+    const f = texto(i.fonte)?.toLowerCase();
     itens.push({
       nome,
       quantidade,
@@ -210,6 +211,7 @@ function normItens(cru: unknown): unknown[] {
       prot: Number(prot.toFixed(2)),
       carb: Number(carb.toFixed(2)),
       gord: Number(gord.toFixed(2)),
+      fonte: f === "taco" || f === "rotulo" ? f : "estimativa",
     });
   }
 

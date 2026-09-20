@@ -14,10 +14,14 @@ const zUnidade = z.enum(["g", "ml", "porcao"]);
 const zTipo = z.enum(["cafe", "almoco", "lanche", "jantar", "ceia"]);
 const zDia = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "dia inválido");
 
+const zFonte = z.enum(["taco", "rotulo", "receita", "estimativa", "manual"]);
+
 const zItem = z.object({
   nome: z.string().trim().min(1).max(120),
   qtd: z.number().positive().max(100000),
   unidade: zUnidade,
+  /** Quando ausente, sai da origem da refeição. */
+  fonte: zFonte.optional(),
   k100: z.number().min(0).max(1000),
   p100: z.number().min(0).max(100),
   c100: z.number().min(0).max(100),
@@ -59,6 +63,16 @@ export async function criarRefeicao(entrada: unknown): Promise<Resultado<{ id: s
   if (!parsed.success) return falha("Dados da refeição inválidos.");
   const { dia, tipo, nome, hora, origem, itens } = parsed.data;
 
+  // De onde a refeição veio já diz de onde vêm os números das linhas.
+  const fontePadrao = {
+    taco: "taco",
+    alimento: "rotulo",
+    receita: "receita",
+    favorito: "manual",
+    ia: "estimativa",
+    manual: "manual",
+  }[origem] as z.infer<typeof zFonte>;
+
   const { sb, userId } = await sessao();
 
   const { data: meal, error } = await sb
@@ -82,6 +96,7 @@ export async function criarRefeicao(entrada: unknown): Promise<Resultado<{ id: s
       nome: it.nome,
       qtd: it.qtd,
       unidade: it.unidade,
+      fonte: it.fonte ?? fontePadrao,
       k100: it.k100,
       p100: it.p100,
       c100: it.c100,
@@ -491,6 +506,7 @@ export async function adicionarReceitaAoDia(args: {
       nome: it.nome,
       qtd: Number((Number(it.qtd_pronto) * fracao).toFixed(2)),
       unidade: it.unidade as Unidade,
+      fonte: "receita" as const,
       k100: Number(it.k100),
       p100: Number(it.p100),
       c100: Number(it.c100),

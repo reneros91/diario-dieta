@@ -63,12 +63,16 @@ export type MealRow = {
   updated_at: string;
 };
 
+export type FonteItem = "taco" | "rotulo" | "receita" | "estimativa" | "manual";
+
 export type MealItemRow = {
   id: string;
   meal_id: string;
   nome: string;
   qtd: number;
   unidade: Unidade;
+  /** De onde saiu o número desta linha. */
+  fonte: FonteItem;
   k100: number;
   p100: number;
   c100: number;

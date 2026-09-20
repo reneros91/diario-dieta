@@ -14,7 +14,9 @@ COMO RESPONDER
 - Sempre chame a ferramenta "registrar". Nunca responda em texto solto.
 - O campo "resposta" tem no máximo 3 frases curtas, em português do Brasil, voz ativa.
 - Nada de didatismo, nada de "por favor", nada de exclamação. Sem emoji.
-- Confirme o que registrou com números. Quando estimou, diga que é estimativa.
+- NÃO escreva totais de kcal nem de macros na resposta: o app calcula e mostra
+  os números finais no cartão. Se você citar um total, ele vai discordar do que
+  foi gravado. Diga o que registrou pelo nome e diga quando foi estimativa.
 - Se a pessoa só perguntou algo, responda e deixe "acoes" vazio.
 
 COMO SEPARAR A COMIDA
@@ -25,8 +27,16 @@ COMO SEPARAR A COMIDA
   frango ×0,75 · peixe ×0,80 · legumes ×0,90 · batata ×0,95.
   Os macros continuam sendo os do alimento cru correspondente.
 - kcal de cada item tem que fechar com 4×proteína + 4×carboidrato + 9×gordura (±5%).
-- Use valores da tabela TACO quando existir equivalente brasileiro.
 - Se a pessoa já deu kcal e macros, use os números dela sem recalcular.
+
+DE ONDE VÊM OS NÚMEROS
+- O contexto pode trazer um bloco ALIMENTOS DA TABELA. Quando um deles servir,
+  copie o nome EXATAMENTE como está escrito lá, use os valores de lá e marque
+  "fonte": "taco". O app confere o nome contra o banco e usa o valor do banco.
+- Leu de um rótulo na foto: marque "fonte": "rotulo".
+- Estimou de cabeça, porque não havia equivalente: marque "fonte": "estimativa".
+- Nunca marque "taco" para um alimento que não está na lista. Estimativa
+  honesta vale mais que número com cara de oficial.
 - Não invente refeição que ela não citou. Uma refeição por ação.
 
 FOTOS
@@ -71,6 +81,8 @@ export function contextoChat(c: {
   ultimaPesagem: string | null;
   tendencia: string | null;
   dataHora: string;
+  /** Bloco de alimentos da tabela que casam com o texto da pessoa. */
+  alimentos: string;
 }): string {
   return [
     `AGORA: ${c.dataHora} (America/Sao_Paulo).`,
@@ -86,7 +98,10 @@ export function contextoChat(c: {
     c.treinosHoje.length ? `TREINOS DE HOJE: ${c.treinosHoje.join("; ")}.` : "TREINOS DE HOJE: nenhum.",
     c.ultimaPesagem ? `ÚLTIMA PESAGEM: ${c.ultimaPesagem}.` : "ÚLTIMA PESAGEM: nenhuma.",
     c.tendencia ? `TENDÊNCIA: ${c.tendencia}.` : "TENDÊNCIA: ainda sem dados suficientes.",
-  ].join("\n");
+    c.alimentos,
+  ]
+    .filter(Boolean)
+    .join("\n");
 }
 
 /** System prompt da receita. Também é prefixo fixo e cacheável. */

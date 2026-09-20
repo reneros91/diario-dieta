@@ -16,6 +16,13 @@ import {
 import { REGRAS, contextoChat } from "@/lib/ai/prompt";
 import { TOOL_REGISTRAR, zRegistro, type Acao } from "@/lib/ai/schema";
 import { normAcoes } from "@/lib/ai/normalize";
+import {
+  conciliarComTaco,
+  indexarTaco,
+  listaParaPrompt,
+  palavrasDeBusca,
+  type LinhaTaco,
+} from "@/lib/ai/taco";
 import { alvos, hojeISO, horaAgora, por100, tendencia } from "@/lib/calc";
 import { perfilParaCalc } from "@/lib/data";
 import { TIPO_LABEL } from "@/lib/format";
@@ -99,6 +106,18 @@ export async function POST(request: Request) {
   const perfil = perfilParaCalc(perfilRow);
   const alvo = alvos(perfil);
 
+  // Alimentos reais que combinam com o texto: sem isso a IA inventa de memória.
+  const palavras = palavrasDeBusca(texto);
+  const { data: candidatos } = palavras.length
+    ? await sb
+        .from("taco")
+        .select("nome, kcal, prot, carb, gord, unidade")
+        .or(palavras.map((p) => `nome.ilike.%${p}%`).join(","))
+        .limit(40)
+    : { data: [] as LinhaTaco[] };
+
+  const tabela = indexarTaco((candidatos ?? []) as LinhaTaco[]);
+
   const [totais, refeicoesHoje, treinosHoje, pesagens, historico] = await Promise.all([
     sb.from("day_totals").select("*").eq("dia", dia).maybeSingle(),
     sb.from("meals").select("tipo, nome, meal_items(qtd, k100)").eq("dia", dia),
@@ -148,6 +167,7 @@ export async function POST(request: Request) {
       : null,
     tendencia: t ? `${t.kgSemana.toFixed(2)} kg/semana nas últimas ${t.janelaDias} dias` : null,
     dataHora: `${dia} ${horaAgora()}`,
+    alimentos: listaParaPrompt((candidatos ?? []) as LinhaTaco[]),
   });
 
   /* 4. Chamada ------------------------------------------------------- */
@@ -211,6 +231,7 @@ export async function POST(request: Request) {
       dia,
       hora: horaAgora(),
       problemas,
+      tabela,
     });
     if (card) cards.push(card);
   }
@@ -242,8 +263,29 @@ export async function POST(request: Request) {
     resposta: { resposta },
   });
 
+  // A IA não cita totais; quem cita é o app, com o número que foi gravado.
+  const totalGravado = cards
+    .filter((c): c is Extract<Card, { tipo: "refeicao" }> => c.tipo === "refeicao")
+    .flatMap((c) => c.refeicao.meal_items)
+    .reduce(
+      (a, i) => ({
+        kcal: a.kcal + (Number(i.qtd) * Number(i.k100)) / 100,
+        prot: a.prot + (Number(i.qtd) * Number(i.p100)) / 100,
+        carb: a.carb + (Number(i.qtd) * Number(i.c100)) / 100,
+        gord: a.gord + (Number(i.qtd) * Number(i.g100)) / 100,
+      }),
+      { kcal: 0, prot: 0, carb: 0, gord: 0 },
+    );
+
+  const resumo =
+    totalGravado.kcal > 0
+      ? `Registrei ${Math.round(totalGravado.kcal)} kcal · ${Math.round(totalGravado.prot)} P · ` +
+        `${Math.round(totalGravado.carb)} C · ${Math.round(totalGravado.gord)} G.`
+      : null;
+
   return NextResponse.json({
     resposta,
+    resumo,
     cards,
     problemas,
     restantes: perfilRow.ai_diario_limite - usadas - 1,
@@ -257,6 +299,8 @@ type Ctx = {
   hora: string;
   /** Falhas de gravação, para a conversa contar em vez de engolir. */
   problemas: string[];
+  /** Alimentos da tabela que casaram com o texto, por nome normalizado. */
+  tabela: Map<string, LinhaTaco>;
 };
 
 /** Grava uma ação e devolve o cartão que a conversa vai mostrar. */
@@ -283,7 +327,10 @@ async function aplicar(acao: Acao, ctx: Ctx): Promise<Card | null> {
         return null;
       }
 
-      const itens = acao.itens.map((it, i) => {
+      // O valor que vale é o do banco quando o nome bate com a tabela.
+      const conciliados = conciliarComTaco(acao.itens, ctx.tabela);
+
+      const itens = conciliados.map((it, i) => {
         const p = por100(it.quantidade, {
           kcal: it.kcal,
           prot: it.prot,
@@ -295,6 +342,7 @@ async function aplicar(acao: Acao, ctx: Ctx): Promise<Card | null> {
           nome: it.nome,
           qtd: it.quantidade,
           unidade: it.unidade,
+          fonte: it.fonte,
           ...p,
           ordem: i,
         };

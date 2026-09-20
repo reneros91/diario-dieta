@@ -11,6 +11,7 @@ import {
 } from "@/app/actions";
 import { macrosItem, somaMacros } from "@/lib/calc";
 import { ORDEM_TIPO, TIPO_EMOJI, TIPO_LABEL, UNIDADE_LABEL, kcal, num } from "@/lib/format";
+import { FONTE_LABEL } from "@/lib/ai/taco";
 import type { MealComItens, MealItemRow, TipoRefeicao } from "@/lib/types/db";
 
 /**
@@ -163,6 +164,19 @@ export function CartaoRefeicao({ refeicao }: { refeicao: MealComItens }) {
   );
 }
 
+/** Número da tabela é verificável; estimativa não. A tela diz qual é qual. */
+function rotuloFonte(fonte: string): string {
+  if (fonte === "taco") return "tabela de alimentos";
+  if (fonte === "rotulo") return "rótulo";
+  if (fonte === "receita") return "receita salva";
+  if (fonte === "manual") return "digitado";
+  return `${FONTE_LABEL.estimativa} da IA`;
+}
+
+function corDaFonte(fonte: string): string {
+  return fonte === "estimativa" ? "var(--carb)" : "var(--muted)";
+}
+
 function Caixinha({ sigla, valor, cor }: { sigla: string; valor: number; cor: string }) {
   return (
     <div className="flex-1 rounded-btn bg-bg px-2 py-1.5 text-center">
@@ -207,6 +221,9 @@ function LinhaItem({
         <p className="text-sm leading-tight truncate">{item.nome}</p>
         <p className="num text-[11px] text-muted">
           {kcal(m.kcal)} kcal · {num(m.prot)} P · {num(m.carb)} C · {num(m.gord)} G
+        </p>
+        <p className="text-[10px] mt-0.5" style={{ color: corDaFonte(item.fonte) }}>
+          {rotuloFonte(item.fonte)}
         </p>
       </div>
 

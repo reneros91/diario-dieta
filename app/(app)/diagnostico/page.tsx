@@ -83,6 +83,7 @@ export default async function Diagnostico() {
       nome: "teste",
       qtd: 100,
       unidade: "g",
+      fonte: "manual",
       k100: 100,
       p100: 10,
       c100: 10,
