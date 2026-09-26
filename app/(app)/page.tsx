@@ -1,15 +1,6 @@
-import { Conversa } from "@/components/Conversa";
-import { supabaseServer } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
 
-export const dynamic = "force-dynamic";
-
-export default async function PaginaConversa() {
-  const sb = await supabaseServer();
-  const { data } = await sb
-    .from("messages")
-    .select("*")
-    .order("created_at", { ascending: false })
-    .limit(30);
-
-  return <Conversa historico={(data ?? []).slice().reverse()} />;
+/** A casa do app agora é o diário: a conversa solta saiu. */
+export default function Raiz() {
+  redirect("/diario");
 }

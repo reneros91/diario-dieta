@@ -7,7 +7,7 @@ export const metadata = { title: "Diagnóstico — NutriDia" };
 
 type Checagem = { nome: string; ok: boolean; detalhe: string };
 
-/** O rastro que /api/chat grava em `ai_calls.resposta` a cada chamada. */
+/** O rastro que /api/analisar grava em `ai_calls.resposta` a cada análise. */
 type ItemRastro = {
   nome?: string;
   qtd?: number;
@@ -232,14 +232,14 @@ export default async function Diagnostico() {
       </ul>
 
       <section className="rounded-card bg-card border border-line shadow-card p-4">
-        <h2 className="text-sm font-semibold">O que a IA fez nas últimas conversas</h2>
+        <h2 className="text-sm font-semibold">O que a IA fez nas últimas análises</h2>
         <p className="mt-0.5 text-[11px] text-muted">
-          Para cada pergunta: se ela pesquisou, o que devolveu e o que o app gravou.
+          Para cada pedido: se ela pesquisou, o que devolveu e o que foi para o diário.
         </p>
 
         {(chamadas ?? []).filter((c) => c.tipo === "chat").length === 0 ? (
           <p className="mt-2 text-sm text-muted">
-            Nenhuma conversa registrada ainda. Mande uma mensagem no chat e volte aqui.
+            Nenhuma análise ainda. Use o botão IA numa refeição e volte aqui.
           </p>
         ) : (
           <ul className="mt-3 space-y-3">
@@ -258,7 +258,7 @@ export default async function Diagnostico() {
 
                     {antigo ? (
                       <p className="mt-1 text-[11px] text-muted">
-                        Conversa anterior à gravação do rastro — só o texto da resposta foi guardado.
+                        Análise anterior à gravação do rastro — só o texto da resposta foi guardado.
                       </p>
                     ) : (
                       <>

@@ -1,6 +1,5 @@
 import Link from "next/link";
-import { CartaoRefeicao } from "@/components/CartaoRefeicao";
-import { BotaoAdicionarNoDia } from "@/components/BotaoAdicionarNoDia";
+import { SecaoRefeicao } from "@/components/SecaoRefeicao";
 import { NotaDoDia } from "@/components/NotaDoDia";
 import { LinhaMacros } from "@/components/BarraMacro";
 import {
@@ -11,7 +10,7 @@ import {
   getTreinos,
 } from "@/lib/data";
 import { hojeISO, rotuloDia, somaDias } from "@/lib/calc";
-import { ORDEM_TIPO, comSinal, kcal } from "@/lib/format";
+import { ORDEM_TIPO, comSinal, kcal, tipoNormalizado } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
@@ -36,7 +35,12 @@ export default async function PaginaDiario({
   const saldo = alvo.meta - consumido.kcal;
   const acima = saldo < 0;
 
-  const porTipo = ORDEM_TIPO.map((t) => refeicoes.filter((r) => r.tipo === t)).flat();
+  // As seis refeições existem sempre, mesmo vazias: são a estrutura do dia.
+  // Refeição antiga com o tipo "lanche" cai no lanche da tarde.
+  const porTipo = ORDEM_TIPO.map((t) => ({
+    tipo: t,
+    refeicoes: refeicoes.filter((r) => tipoNormalizado(r.tipo) === t),
+  }));
 
   return (
     <div className="space-y-4">
@@ -92,14 +96,8 @@ export default async function PaginaDiario({
         </div>
       </section>
 
-      <BotaoAdicionarNoDia dia={dia} />
-
-      {porTipo.length === 0 && (
-        <p className="text-sm text-muted">Nenhuma refeição neste dia.</p>
-      )}
-
-      {porTipo.map((r) => (
-        <CartaoRefeicao key={r.id} refeicao={r} />
+      {porTipo.map((g) => (
+        <SecaoRefeicao key={g.tipo} dia={dia} tipo={g.tipo} refeicoes={g.refeicoes} />
       ))}
 
       {treinos.length > 0 && (

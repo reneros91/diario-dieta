@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const ABAS = [
-  { href: "/", label: "Conversa", icone: IconeConversa },
   { href: "/diario", label: "Diário", icone: IconeDiario },
   { href: "/periodo", label: "Período", icone: IconePeriodo },
   { href: "/corpo", label: "Corpo", icone: IconeCorpo },
@@ -22,7 +21,7 @@ export function Abas() {
     >
       <ul className="mx-auto max-w-lg flex">
         {ABAS.map(({ href, label, icone: Icone }) => {
-          const ativa = href === "/" ? path === "/" : path.startsWith(href);
+          const ativa = path.startsWith(href);
           return (
             <li key={href} className="flex-1">
               <Link
@@ -53,14 +52,6 @@ const base = (ativa: boolean) => ({
   strokeLinecap: "round" as const,
   strokeLinejoin: "round" as const,
 });
-
-function IconeConversa({ ativa }: IconeProps) {
-  return (
-    <svg viewBox="0 0 24 24" {...base(ativa)} aria-hidden>
-      <path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9.7 9.7 0 0 1-2.8-.4L3 21l1.6-4.6A8.3 8.3 0 0 1 3.6 8 8.4 8.4 0 0 1 12 3.1a8.4 8.4 0 0 1 9 8.4Z" />
-    </svg>
-  );
-}
 
 function IconeDiario({ ativa }: IconeProps) {
   return (

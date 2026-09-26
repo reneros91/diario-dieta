@@ -47,14 +47,17 @@ type FavoritoHub = { id: string; nome: string; linhas: number; kcal: number };
 export function Hub({
   aberto,
   dia,
+  tipoFixo,
   onFechar,
 }: {
   aberto: boolean;
   dia?: string;
+  /** Aberto a partir de uma refeição: ela já está escolhida, some o seletor. */
+  tipoFixo?: TipoRefeicao;
   onFechar: () => void;
 }) {
   const diaAlvo = dia ?? hojeISO();
-  const tipoSugerido = refeicaoPorHora(new Date().getHours());
+  const tipoSugerido = tipoFixo ?? refeicaoPorHora(new Date().getHours());
 
   const [tela, setTela] = useState<Tela>("menu");
   const [escolhido, setEscolhido] = useState<AlimentoEscolhido | null>(null);
@@ -114,6 +117,7 @@ export function Hub({
             receitas={listas?.receitas ?? []}
             dia={diaAlvo}
             tipoInicial={tipoSugerido}
+            travarTipo={Boolean(tipoFixo)}
             onVoltar={() => setTela("menu")}
             onPronto={onFechar}
           />
@@ -132,6 +136,7 @@ export function Hub({
             favoritos={listas?.favoritos ?? []}
             dia={diaAlvo}
             tipoInicial={tipoSugerido}
+            travarTipo={Boolean(tipoFixo)}
             onVoltar={() => setTela("menu")}
             onPronto={onFechar}
           />
@@ -162,6 +167,7 @@ export function Hub({
             alimento={escolhido}
             dia={diaAlvo}
             tipoInicial={tipoSugerido}
+            travarTipo={Boolean(tipoFixo)}
             onVoltar={() => setTela("menu")}
             onPronto={onFechar}
           />
@@ -281,12 +287,14 @@ function Receitas({
   receitas,
   dia,
   tipoInicial,
+  travarTipo,
   onVoltar,
   onPronto,
 }: {
   receitas: ReceitaHub[];
   dia: string;
   tipoInicial: TipoRefeicao;
+  travarTipo?: boolean;
   onVoltar: () => void;
   onPronto: () => void;
 }) {
@@ -338,7 +346,7 @@ function Receitas({
           </div>
         </div>
 
-        <SeletorTipo tipo={tipo} onTipo={setTipo} />
+        {!travarTipo && <SeletorTipo tipo={tipo} onTipo={setTipo} />}
 
         {erro && (
           <p role="alert" className="text-sm" style={{ color: "var(--over)" }}>
@@ -471,12 +479,14 @@ function Favoritos({
   favoritos,
   dia,
   tipoInicial,
+  travarTipo,
   onVoltar,
   onPronto,
 }: {
   favoritos: FavoritoHub[];
   dia: string;
   tipoInicial: TipoRefeicao;
+  travarTipo?: boolean;
   onVoltar: () => void;
   onPronto: () => void;
 }) {
@@ -498,7 +508,7 @@ function Favoritos({
         </p>
       ) : (
         <>
-          <SeletorTipo tipo={tipo} onTipo={setTipo} />
+          {!travarTipo && <SeletorTipo tipo={tipo} onTipo={setTipo} />}
           <ul className="mt-3 divide-y divide-line">
             {favoritos.map((f) => (
               <li key={f.id}>

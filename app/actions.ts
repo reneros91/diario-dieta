@@ -4,7 +4,12 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { supabaseServer, usuarioAtual } from "@/lib/supabase/server";
 import { hojeISO, horaAgora } from "@/lib/calc";
-import { colunaAusente, semColuna } from "@/lib/supabase/compat";
+import {
+  colunaAusente,
+  comTipoAntigo,
+  semColuna,
+  tipoRefeicaoRecusado,
+} from "@/lib/supabase/compat";
 import type { FavoritoItem, TipoRefeicao, Unidade } from "@/lib/types/db";
 
 /* ------------------------------------------------------------------ */
@@ -12,7 +17,16 @@ import type { FavoritoItem, TipoRefeicao, Unidade } from "@/lib/types/db";
 /* ------------------------------------------------------------------ */
 
 const zUnidade = z.enum(["g", "ml", "porcao"]);
-const zTipo = z.enum(["cafe", "almoco", "lanche", "jantar", "ceia"]);
+const zTipo = z.enum([
+  "cafe",
+  "lanche_manha",
+  "almoco",
+  "lanche_tarde",
+  "jantar",
+  "ceia",
+  // Aceito na entrada porque ainda existe em refeição gravada antes da 0008.
+  "lanche",
+]);
 const zDia = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "dia inválido");
 
 const zFonte = z.enum(["taco", "rotulo", "web", "receita", "estimativa", "manual"]);
@@ -76,18 +90,29 @@ export async function criarRefeicao(entrada: unknown): Promise<Resultado<{ id: s
 
   const { sb, userId } = await sessao();
 
-  const { data: meal, error } = await sb
+  const cabecalho = {
+    user_id: userId,
+    dia,
+    nome,
+    hora: hora ?? horaAgora(),
+    origem,
+  };
+
+  let { data: meal, error } = await sb
     .from("meals")
-    .insert({
-      user_id: userId,
-      dia,
-      tipo,
-      nome,
-      hora: hora ?? horaAgora(),
-      origem,
-    })
+    .insert({ ...cabecalho, tipo })
     .select("id")
     .single();
+
+  // Banco ainda sem a migration 0008: só conhece os cinco tipos antigos.
+  const antigo = tipoRefeicaoRecusado(error) ? comTipoAntigo(tipo) : null;
+  if (antigo) {
+    ({ data: meal, error } = await sb
+      .from("meals")
+      .insert({ ...cabecalho, tipo: antigo as TipoRefeicao })
+      .select("id")
+      .single());
+  }
 
   if (error || !meal) return falha("Não deu para salvar a refeição.");
 
@@ -529,6 +554,22 @@ export async function adicionarReceitaAoDia(args: {
     origem: "receita",
     itens,
   });
+}
+
+/**
+ * Grava no diário os itens que a pessoa aprovou no painel da IA.
+ *
+ * A IA não escreve mais direto no diário: ela propõe, isto grava. Cada linha
+ * mantém a procedência que veio da análise, então o cartão continua dizendo se
+ * o número saiu da tabela, do Open Food Facts ou de estimativa.
+ */
+export async function adicionarItensAnalisados(args: {
+  dia: string;
+  tipo: TipoRefeicao;
+  nome: string;
+  itens: ItemEntrada[];
+}): Promise<Resultado<{ id: string }>> {
+  return criarRefeicao({ ...args, origem: "ia" });
 }
 
 export async function adicionarFavoritoAoDia(args: {

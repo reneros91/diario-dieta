@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
+  ORDEM_TIPO,
+  TIPO_EMOJI,
+  TIPO_LABEL,
+  refeicaoPorHora,
+  tipoNormalizado,
+} from "@/lib/format";
+import {
   alvos,
   deficitSugerido,
   fatorRendimento,
@@ -282,5 +289,39 @@ describe("datas", () => {
     expect(rotuloDia("2026-02-10", "2026-02-10")).toBe("Hoje");
     expect(rotuloDia("2026-02-09", "2026-02-10")).toBe("Ontem");
     expect(rotuloDia("2026-02-03", "2026-02-10")).toContain("fev");
+  });
+});
+
+describe("as seis refeições", () => {
+  it("cobre o dia inteiro sem buraco nem sobreposição", () => {
+    const esperado: [number, string][] = [
+      [0, "ceia"], [7, "cafe"], [9, "cafe"],
+      [10, "lanche_manha"], [11, "lanche_manha"],
+      [12, "almoco"], [14, "almoco"],
+      [15, "lanche_tarde"], [17, "lanche_tarde"],
+      [18, "jantar"], [21, "jantar"],
+      [22, "ceia"], [23, "ceia"],
+    ];
+    for (const [hora, tipo] of esperado) {
+      expect(`${hora}h → ${refeicaoPorHora(hora)}`).toBe(`${hora}h → ${tipo}`);
+    }
+  });
+
+  it("toda hora do dia cai numa das seis", () => {
+    for (let h = 0; h < 24; h++) {
+      expect(ORDEM_TIPO).toContain(refeicaoPorHora(h));
+    }
+  });
+
+  it("toda refeição da ordem tem nome e emoji", () => {
+    for (const t of ORDEM_TIPO) {
+      expect(TIPO_LABEL[t]).toBeTruthy();
+      expect(TIPO_EMOJI[t]).toBeTruthy();
+    }
+  });
+
+  it("refeição antiga cai no lanche da tarde", () => {
+    expect(tipoNormalizado("lanche")).toBe("lanche_tarde");
+    expect(tipoNormalizado("almoco")).toBe("almoco");
   });
 });

@@ -26,12 +26,15 @@ export function TelaPorcao({
   alimento,
   dia,
   tipoInicial,
+  travarTipo,
   onVoltar,
   onPronto,
 }: {
   alimento: AlimentoEscolhido;
   dia: string;
   tipoInicial: TipoRefeicao;
+  /** Veio de uma refeição do diário: não faz sentido perguntar qual é. */
+  travarTipo?: boolean;
   onVoltar: () => void;
   onPronto: () => void;
 }) {
@@ -132,26 +135,32 @@ export function TelaPorcao({
         </div>
       </div>
 
-      <div>
-        <p className="text-[11px] text-muted mb-1.5">Refeição</p>
-        <div className="flex flex-wrap gap-1.5">
-          {ORDEM_TIPO.map((t) => (
-            <button
-              key={t}
-              type="button"
-              onClick={() => setTipo(t)}
-              aria-pressed={t === tipo}
-              className="rounded-btn px-2.5 py-1.5 text-xs border"
-              style={{
-                borderColor: t === tipo ? "var(--accent)" : "var(--line)",
-                color: t === tipo ? "var(--accent)" : "var(--ink)",
-              }}
-            >
-              {TIPO_EMOJI[t]} {TIPO_LABEL[t]}
-            </button>
-          ))}
+      {travarTipo ? (
+        <p className="text-[11px] text-muted">
+          Vai para {TIPO_EMOJI[tipo]} {TIPO_LABEL[tipo]}.
+        </p>
+      ) : (
+        <div>
+          <p className="text-[11px] text-muted mb-1.5">Refeição</p>
+          <div className="flex flex-wrap gap-1.5">
+            {ORDEM_TIPO.map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => setTipo(t)}
+                aria-pressed={t === tipo}
+                className="rounded-btn px-2.5 py-1.5 text-xs border"
+                style={{
+                  borderColor: t === tipo ? "var(--accent)" : "var(--line)",
+                  color: t === tipo ? "var(--accent)" : "var(--ink)",
+                }}
+              >
+                {TIPO_EMOJI[t]} {TIPO_LABEL[t]}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {erro && (
         <p role="alert" className="text-sm" style={{ color: "var(--over)" }}>

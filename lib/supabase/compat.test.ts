@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { colunaAusente, semColuna } from "./compat";
+import { colunaAusente, comTipoAntigo, semColuna, tipoRefeicaoRecusado } from "./compat";
 
 const erro = (code: string, message: string, details = "") => ({
   code,
@@ -43,5 +43,42 @@ describe("semColuna", () => {
     const original = [{ nome: "Arroz", fonte: "taco" }];
     semColuna(original, "fonte");
     expect(original[0].fonte).toBe("taco");
+  });
+});
+
+describe("tipo de refeição recusado pelo banco", () => {
+  it("reconhece a restrição CHECK do tipo", () => {
+    expect(
+      tipoRefeicaoRecusado({
+        code: "23514",
+        message: 'new row for relation "meals" violates check constraint "meals_tipo_check"',
+        details: "Failing row contains (…, lanche_manha, …).",
+      }),
+    ).toBe(true);
+  });
+
+  it("não confunde com outra restrição CHECK", () => {
+    expect(
+      tipoRefeicaoRecusado({
+        code: "23514",
+        message: 'violates check constraint "meal_items_qtd_check"',
+        details: null,
+      }),
+    ).toBe(false);
+  });
+
+  it("não reage a erro que não é de CHECK", () => {
+    expect(tipoRefeicaoRecusado({ code: "42703", message: "column tipo", details: null })).toBe(false);
+    expect(tipoRefeicaoRecusado(null)).toBe(false);
+  });
+
+  it("manda os dois lanches novos para o lanche antigo", () => {
+    expect(comTipoAntigo("lanche_manha")).toBe("lanche");
+    expect(comTipoAntigo("lanche_tarde")).toBe("lanche");
+  });
+
+  it("não inventa equivalente para tipo que sempre existiu", () => {
+    expect(comTipoAntigo("almoco")).toBeNull();
+    expect(comTipoAntigo("cafe")).toBeNull();
   });
 });

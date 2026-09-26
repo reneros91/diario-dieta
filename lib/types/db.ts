@@ -24,7 +24,15 @@ type FK<Nome extends string, Coluna extends string, Alvo extends string> = {
 };
 
 export type Sexo = "m" | "f";
-export type TipoRefeicao = "cafe" | "almoco" | "lanche" | "jantar" | "ceia";
+export type TipoRefeicao =
+  | "cafe"
+  | "lanche_manha"
+  | "almoco"
+  | "lanche_tarde"
+  | "jantar"
+  | "ceia"
+  /** Só existe em linhas gravadas antes da migration 0008. */
+  | "lanche";
 export type Unidade = "g" | "ml" | "porcao";
 export type OrigemRefeicao = "ia" | "taco" | "receita" | "alimento" | "favorito" | "manual";
 export type NivelAtividade = "sentado" | "leve" | "ativo";

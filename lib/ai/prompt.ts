@@ -115,8 +115,10 @@ TREINO E PESO
 - Passos, sono e nível de atividade vão na ação "dia".
 
 REFEIÇÕES
-- cafe, almoco, lanche, jantar, ceia. Escolha pelo que a pessoa disse; se ela não disse,
-  use a hora atual: até 10h cafe, até 15h almoco, até 18h lanche, até 22h jantar, depois ceia.
+- cafe, lanche_manha, almoco, lanche_tarde, jantar, ceia. O contexto diz em qual
+  refeição a pessoa está registrando: use aquela. Sem essa indicação, use a hora
+  atual: até 10h cafe, até 12h lanche_manha, até 15h almoco, até 18h lanche_tarde,
+  até 22h jantar, depois ceia.
 - O campo "nome" é curto e descritivo: "Almoço", "Pizza", "Shake pós-treino".`;
 
 /**

@@ -23,7 +23,7 @@ export const zItemIA = z.object({
 export const zAcao = z.discriminatedUnion("tipo", [
   z.object({
     tipo: z.literal("refeicao"),
-    refeicao: z.enum(["cafe", "almoco", "lanche", "jantar", "ceia"]),
+    refeicao: z.enum(["cafe", "lanche_manha", "almoco", "lanche_tarde", "jantar", "ceia"]),
     nome: z.string().trim().min(1).max(120),
     itens: z.array(zItemIA).min(1).max(20),
   }),
@@ -96,7 +96,7 @@ export const TOOL_REGISTRAR = {
             },
             refeicao: {
               type: "string",
-              enum: ["cafe", "almoco", "lanche", "jantar", "ceia"],
+              enum: ["cafe", "lanche_manha", "almoco", "lanche_tarde", "jantar", "ceia"],
               description: "Só para tipo=refeicao.",
             },
             nome: { type: "string", description: "Nome curto da refeição, treino ou alimento." },

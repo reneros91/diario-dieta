@@ -30,16 +30,21 @@ const texto = (v: unknown): string | null => {
   return t.length ? t.slice(0, 120) : null;
 };
 
-type Refeicao = "cafe" | "almoco" | "lanche" | "jantar" | "ceia";
+type Refeicao = "cafe" | "lanche_manha" | "almoco" | "lanche_tarde" | "jantar" | "ceia";
 
 const SINONIMOS: Record<string, Refeicao> = {
   cafe: "cafe",
   "cafe da manha": "cafe",
   manha: "cafe",
+  "lanche da manha": "lanche_manha",
+  lanche_manha: "lanche_manha",
+  colacao: "lanche_manha",
   almoco: "almoco",
-  lanche: "lanche",
-  "lanche da tarde": "lanche",
-  tarde: "lanche",
+  // "lanche" sozinho é ambíguo; cai na tarde, que é onde quase sempre está.
+  lanche: "lanche_tarde",
+  "lanche da tarde": "lanche_tarde",
+  lanche_tarde: "lanche_tarde",
+  tarde: "lanche_tarde",
   jantar: "jantar",
   janta: "jantar",
   noite: "jantar",
